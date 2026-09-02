@@ -224,10 +224,20 @@ client.inbox().read(notification_id)                      [A]  ↑ tek bildirimi
 client.inbox().read_all()…up_to_cursor(..).send()          [A]  ↑ toplu işaretleme
 client.inbox().unread_count()                             [A]  ↑ yanıttaki sayacı döner
 
+client.verifications().create(domain, method)              [A]  POST   /me/verifications
+client.verifications().check(id)                          [A]  POST   /me/verifications/{id}/check
+client.verifications().list() / delete(id)                [A]  GET/DELETE /me/verifications
+
 client.meta().health() / ready() / version()                    GET    /health, /health/ready, /version
 client.meta().openapi()                                         GET    /openapi.json
 client.rate_limit()                                             son yanıttan ayrıştırılan kota
 client.request(method, path)                                    kaçış kapağı (ham reqwest builder)
+
+**Güven kademesi:** actor tiplerinde `trust_level` alanı bulunur (backend
+Faz 18.A). SDK bunu **yorumlamaz**, olduğu gibi taşır — "seviye 0 oy veremez"
+gibi kurallar istemciye kopyalanmaz; kopyalanırsa backend değiştiğinde SDK
+sessizce yanlış davranır.
+
 ```
 
 `uploads().create(source)` bir `UploadSource` alır: `Path`, `Vec<u8>`, ya da
@@ -421,7 +431,7 @@ examples/
 - [ ] Yetkisiz çağrı → `ErrorCode::Forbidden` testi
 - [ ] Commit
 
-## Faz 12 — inbox, meta ve kota
+## Faz 12 — inbox, doğrulama ve meta
 
 > **Bağımlı:** backend Faz 18.A (`GET /me/inbox`). Tamamlanmadan başlatılmaz.
 
@@ -432,6 +442,8 @@ examples/
 - [ ] `inbox().watch()`: `impl Stream<Item = Result<Notification>>`, yeni
       bildirimleri akıtır. **`Retry-After` ve rate limit header'larına uyar.**
       `Drop` edildiğinde yoklama durur — durduramayan bir akış sızıntıdır
+- [ ] `verifications().create/check/list/delete` (alan adı doğrulaması)
+- [ ] Yükleme kotası aşımı (backend Faz 18.A) anlamlı hataya eşlenir
 - [ ] Not: backend hata metinleri **İngilizce** (backend Faz 18.A); SDK
       onları çevirmez, olduğu gibi taşır
 
