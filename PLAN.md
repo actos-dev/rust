@@ -62,6 +62,27 @@ tersi olurdu. Sunucunun kendisi AGPL kalarak platform korunmaya devam eder.
 üç SDK'da tutarlılık için seçildi, istenirse ikiliye geçmek geriye dönük
 uyumludur.)
 
+### 0.3. Bugün kodlanamayacaklar — backend Faz 18.A bekliyor
+
+Backend `PLAN.md` Faz 18.A henüz uygulanmadı. **Canlı `GET /openapi.json`
+otoritedir:** bu planın §3'ünde listelenip spec'te bulunmayan hiçbir uç ya da
+alan için kod yazılmaz, uydurulmaz.
+
+Bugün atlanacaklar, planda `[ ]` bırakılır:
+
+| Ne | Nerede |
+|---|---|
+| `inbox.*` ve `verifications.*` | Faz 12.B |
+| `actors().update_me()`'in `.avatar(..)` parametresi | Faz 5 |
+| `feed().list()`'in `.actor_type(..)` parametresi | Faz 8 |
+
+Backend Faz 18.A bitince tipler yeniden üretilir ve bu parçalar ikinci bir
+geçişte eklenir.
+
+**Spec nerede:** `actos-backend/docs/openapi.json` — repoda commit'li, sunucu
+ayağa kaldırmana gerek yok. Canlı doğrulama yapacaksan backend'de
+`docker compose up -d` + `cargo run -p actos-api` ile `127.0.0.1:3100`.
+
 **Açık bırakılan (v1'de karar verilecek):** `blocking` cephesinin kapsamı
 (tam paralel mi, yalnızca sık kullanılan metotlar mı), `tracing` entegrasyonu
 opsiyonel feature olarak sunulacak mı.
@@ -430,9 +451,19 @@ examples/
 - [ ] Yetkisiz çağrı → `ErrorCode::Forbidden` testi
 - [ ] Commit
 
-## Faz 12 — inbox, doğrulama ve meta
+## Faz 12 — meta, inbox ve doğrulama
 
-> **Bağımlı:** backend Faz 18.A (`GET /me/inbox`). Tamamlanmadan başlatılmaz.
+### 12.A — meta ve kota (bağımsız, bugün yapılabilir)
+
+- [ ] `meta().health/ready/version/openapi`
+- [ ] `client.rate_limit()` — son yanıttan; hiç istek atılmadıysa `None`
+- [ ] `version()` SDK sürümü + sunucu sürümünü birlikte verir
+- [ ] Commit (12.A)
+
+### 12.B — inbox ve doğrulama (BLOKE — backend Faz 18.A)
+
+> Bu bölüm backend Faz 18.A tamamlanmadan **başlatılmaz.** Uçlar canlı
+> spec'te yokken kod yazılmaz; bkz. §0.3.
 
 - [ ] `inbox().list/stream/read/read_all/unread_count`
 - [ ] `read_all` **idempotent**: iki kez çağırmak hata vermez
@@ -445,11 +476,7 @@ examples/
 - [ ] Yükleme kotası aşımı (backend Faz 18.A) anlamlı hataya eşlenir
 - [ ] Not: backend hata metinleri **İngilizce** (backend Faz 18.A); SDK
       onları çevirmez, olduğu gibi taşır
-
-- [ ] `meta().health/ready/version/openapi`
-- [ ] `client.rate_limit()` — son yanıttan; hiç istek atılmadıysa `None`
-- [ ] `version()` SDK sürümü + sunucu sürümünü birlikte verir
-- [ ] Commit
+- [ ] Commit (12.B)
 
 ## Faz 13 — Sözleşme test paketi
 
