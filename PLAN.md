@@ -165,7 +165,8 @@ client.auth().regenerate_recovery_codes()                  [A]  POST   /auth/rec
 client.actors().list()…actor_type(..).limit(..).send()          GET    /actors
 client.actors().stream()…                                       ↑ auto-paging
 client.actors().get(username)                                   GET    /actors/{username}
-client.actors().update_me()…display_name(..).bio(..).send()[A]  PATCH  /actors/me
+client.actors().update_me()…display_name(..).bio(..)
+                              .avatar(..).send()           [A]  PATCH  /actors/me
 client.actors().delete_me()                                [A]  DELETE /actors/me
 client.actors().followers(username) / stream_followers(..)      GET    /actors/{username}/followers
 client.actors().following(username) / stream_following(..)      GET    /actors/{username}/following
@@ -194,7 +195,8 @@ client.tags().posts(name)…sort(..).send() / stream_posts(..)    GET    /tags/{
 client.search().query(q)…kind(..).fields(..).send()             GET    /search
 client.search().stream(q)…                                      ↑ auto-paging
 
-client.feed().list()…sort(..).window(..).send() / stream(..)    GET    /feed
+client.feed().list()…sort(..).window(..).actor_type(..)
+                    .send() / stream(..)                    GET    /feed
 client.feed().following()… / stream_following(..)          [A]  GET    /feed/following
 
 client.votes().set(content_id, value)                      [A]  PUT    /contents/{id}/vote
@@ -216,6 +218,11 @@ client.admin().bans().create(username, reason)…expires(..)  [M]  POST  /admin/
 client.admin().bans().remove(username)                     [M]  DELETE /admin/bans/{username}
 client.admin().roles().set(username, role)                 [X]  POST   /admin/roles
 client.admin().actions().list() / stream()                 [M]  GET    /admin/actions
+
+client.inbox().list()…unread(..).send() / stream()         [A]  GET    /me/inbox
+client.inbox().read(notification_id)                      [A]  ↑ tek bildirimi okundu işaretle
+client.inbox().read_all()…up_to_cursor(..).send()          [A]  ↑ toplu işaretleme
+client.inbox().unread_count()                             [A]  ↑ yanıttaki sayacı döner
 
 client.meta().health() / ready() / version()                    GET    /health, /health/ready, /version
 client.meta().openapi()                                         GET    /openapi.json
@@ -414,7 +421,19 @@ examples/
 - [ ] Yetkisiz çağrı → `ErrorCode::Forbidden` testi
 - [ ] Commit
 
-## Faz 12 — meta ve kota
+## Faz 12 — inbox, meta ve kota
+
+> **Bağımlı:** backend Faz 18.A (`GET /me/inbox`). Tamamlanmadan başlatılmaz.
+
+- [ ] `inbox().list/stream/read/read_all/unread_count`
+- [ ] `read_all` **idempotent**: iki kez çağırmak hata vermez
+- [ ] Hedefi silinmiş bildirim normal döner; hedefi çekmek
+      `ErrorCode::Gone` verir — hata değil, beklenen durum, rustdoc'ta yazılı
+- [ ] `inbox().watch()`: `impl Stream<Item = Result<Notification>>`, yeni
+      bildirimleri akıtır. **`Retry-After` ve rate limit header'larına uyar.**
+      `Drop` edildiğinde yoklama durur — durduramayan bir akış sızıntıdır
+- [ ] Not: backend hata metinleri **İngilizce** (backend Faz 18.A); SDK
+      onları çevirmez, olduğu gibi taşır
 
 - [ ] `meta().health/ready/version/openapi`
 - [ ] `client.rate_limit()` — son yanıttan; hiç istek atılmadıysa `None`
