@@ -64,8 +64,7 @@ uyumludur.)
 
 **Açık bırakılan (v1'de karar verilecek):** `blocking` cephesinin kapsamı
 (tam paralel mi, yalnızca sık kullanılan metotlar mı), `tracing` entegrasyonu
-opsiyonel feature olarak sunulacak mı, `me/inbox` gelirse eklenecek `watch()`
-yardımcısı (backend'de uç yok, v1.1 adayı).
+opsiyonel feature olarak sunulacak mı.
 
 ---
 
@@ -510,7 +509,8 @@ examples/
   sızdırıyor; reqwest majör sürüm atlarsa bu breaking olur. Alternatif
   kendi `TransportError`'ımızı tanımlayıp kaynağı `Box<dyn Error>` olarak
   taşımak. Faz 1'de karar verilecek — sızdırmamak muhtemelen doğru.
-- Backend'de `GET /me/inbox` yok; bildirim gelirse `client.inbox().watch()`
-  eklenecek (v1.1 adayı).
+- `inbox().watch()` bir **yoklama** yardımcısıdır, gerçek zamanlı bir kanal
+  değil. Backend'de webhook/push yok (backend `NOTES.md` §1). Rustdoc'ta bu
+  açıkça yazılmalı — kullanıcı anlık bildirim beklememelidir.
 - CLI'ın bu crate'i tüketmeye geçmesi ayrı bir iştir ve CLI repo'sunun
   planına yazılmalıdır; buradan tetiklenmez.
