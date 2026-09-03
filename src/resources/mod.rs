@@ -14,7 +14,10 @@ pub mod tags;
 pub mod uploads;
 pub mod votes;
 
-pub use actors::Actors;
+pub use actors::{
+    ActorCommentsBuilder, ActorPostsBuilder, Actors, CommentSummary, DeleteMeBuilder,
+    FollowersBuilder, FollowingBuilder, ListActorsBuilder, Post, UpdateMeBuilder,
+};
 pub use admin::Admin;
 pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::Comments;

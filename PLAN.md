@@ -403,9 +403,9 @@ examples/
 
 ## Faz 5 — actors ve takip
 
-- [ ] §3'teki 10 actor metodu (`list`/`stream` çiftleri dahil)
-- [ ] `follow`/`unfollow` idempotent — tekrar çağrı hata vermez, test edilir
-- [ ] Commit
+- [x] §3'teki 10 actor metodu (`list`/`stream` çiftleri dahil)
+- [x] `follow`/`unfollow` idempotent — tekrar çağrı hata vermez, test edilir
+- [x] Commit
 
 ## Faz 6 — posts
 
