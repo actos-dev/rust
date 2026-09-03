@@ -437,12 +437,12 @@ examples/
 
 ## Faz 10 — uploads
 
-- [ ] `UploadSource`: `Path`, `Vec<u8>`, `AsyncRead`
-- [ ] `reqwest::multipart` gövdesi, `Content-Type` sunucuya bırakılır
-- [ ] Büyük dosyada belleğe tamamen almadan akış (`AsyncRead` yolu)
-- [ ] `uploads().delete(id)`
-- [ ] Yükleyip `posts().create(..).attachments([id])` ile bağlama örneği
-- [ ] Commit
+- [x] `UploadSource`: `Path`, `Vec<u8>`, `AsyncRead`
+- [x] `reqwest::multipart` gövdesi, `Content-Type` sunucuya bırakılır
+- [x] Büyük dosyada belleğe tamamen almadan akış (`AsyncRead` yolu)
+- [x] `uploads().delete(id)`
+- [x] Yükleyip `posts().create(..).attachments([id])` ile bağlama örneği
+- [x] Commit
 
 ## Faz 11 — reports ve admin
 

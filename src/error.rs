@@ -120,6 +120,10 @@ pub enum Error {
     /// Invalid client configuration (e.g. malformed base URL).
     #[error("yapılandırma hatası: {0}")]
     Config(String),
+
+    /// File I/O error during upload operations (§4).
+    #[error("dosya okuma hatası: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 impl Error {
@@ -208,7 +212,7 @@ impl Error {
                     || *code == actos_types::ErrorCode::RateLimited
                     || (*status >= 500 && *status <= 599)
             }
-            Self::Decode(_) | Self::Config(_) => false,
+            Self::Decode(_) | Self::Config(_) | Self::Io(_) => false,
         }
     }
 

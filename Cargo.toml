@@ -18,6 +18,7 @@ futures-core = "0.3"
 futures-util = "0.3"
 uuid = { version = "1.15", features = ["v4"] }
 fastrand = "2.3"
+tokio-util = { version = "0.7", features = ["io"] }
 
 [dev-dependencies]
 tokio = { version = "1.43", features = ["full", "test-util"] }

@@ -90,5 +90,5 @@ pub use reports::Reports;
 pub use saves::{ListSavesBuilder, SaveListResponse, Saves};
 pub use search::{Search, SearchBuilder};
 pub use tags::{ListTagsBuilder, TagMatch, TagPostsBuilder, TagSummary, Tags};
-pub use uploads::Uploads;
+pub use uploads::{CreateUploadBuilder, UploadResponse, UploadSource, Uploads};
 pub use votes::{VoteMapResponse, VoteResponse, Votes};
