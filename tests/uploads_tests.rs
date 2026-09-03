@@ -8,10 +8,10 @@ impl Match for MultipartFileMatcher {
     fn matches(&self, request: &Request) -> bool {
         let content_type = request
             .headers
-            .get(&wiremock::http::HeaderName::from_static("content-type"));
+            .get(wiremock::http::HeaderName::from_static("content-type"));
         let is_multipart = content_type
             .and_then(|v| v.to_str().ok())
-            .map_or(false, |s| s.starts_with("multipart/form-data"));
+            .is_some_and(|s| s.starts_with("multipart/form-data"));
         let body_str = String::from_utf8_lossy(&request.body);
         is_multipart && body_str.contains("name=\"file\"")
     }

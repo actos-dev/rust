@@ -8,7 +8,7 @@
 //! ```
 //!
 //! This module provides a synchronous wrapper over the core asynchronous client
-//! by executing requests on an internal, dedicated Tokio single-threaded runtime.
+//! by executing requests on an internal, dedicated Tokio runtime.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -411,11 +411,13 @@ pub struct BlockingCreatePostBuilder<'a> {
 }
 
 impl<'a> BlockingCreatePostBuilder<'a> {
+    /// Adds tags to the post.
     pub fn tags(mut self, tags: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.tags(tags);
         self
     }
 
+    /// Attaches file uploads to the post.
     pub fn attachment_ids(
         mut self,
         attachment_ids: impl IntoIterator<Item = impl Into<String>>,
@@ -424,21 +426,25 @@ impl<'a> BlockingCreatePostBuilder<'a> {
         self
     }
 
+    /// Attaches custom JSON metadata to the post.
     pub fn metadata(mut self, metadata: serde_json::Value) -> Self {
         self.inner = self.inner.metadata(metadata);
         self
     }
 
+    /// Sets a custom idempotency key.
     pub fn idempotency_key(mut self, key: impl Into<String>) -> Self {
         self.inner = self.inner.idempotency_key(key);
         self
     }
 
+    /// Disables automatic idempotency key generation.
     pub fn no_idempotency_key(mut self) -> Self {
         self.inner = self.inner.no_idempotency_key();
         self
     }
 
+    /// Dispatches the post creation request synchronously.
     pub fn send(self) -> Result<Post> {
         self.client.block_on(self.inner.send())
     }
@@ -452,20 +458,24 @@ pub struct BlockingGetPostBuilder<'a> {
 }
 
 impl<'a> BlockingGetPostBuilder<'a> {
+    /// Specifies projected fields to retrieve.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Dispatches the request and synthesizes the post.
     pub fn send(self) -> Result<Post> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Dispatches the request and returns raw partial JSON.
     pub fn send_json(self) -> Result<serde_json::Value> {
         self.client.block_on(self.inner.send_json())
     }
@@ -479,16 +489,19 @@ pub struct BlockingUpdatePostBuilder<'a> {
 }
 
 impl<'a> BlockingUpdatePostBuilder<'a> {
+    /// Updates the post title.
     pub fn title(mut self, title: impl Into<String>) -> Self {
         self.inner = self.inner.title(title);
         self
     }
 
+    /// Updates the post body.
     pub fn body(mut self, body: impl Into<String>) -> Self {
         self.inner = self.inner.body(body);
         self
     }
 
+    /// Dispatches the update request synchronously.
     pub fn send(self) -> Result<Post> {
         self.client.block_on(self.inner.send())
     }
@@ -500,6 +513,7 @@ pub struct BlockingComments {
 }
 
 impl BlockingComments {
+    /// Starts building a comment creation request synchronously.
     pub fn create<'a>(
         &'a self,
         post_id: impl Into<String>,
@@ -512,6 +526,7 @@ impl BlockingComments {
         }
     }
 
+    /// Starts building a comment listing request synchronously.
     pub fn list<'a>(&'a self, post_id: impl Into<String>) -> BlockingListCommentsBuilder<'a> {
         let inner = self.client.inner.comments().list(post_id);
         BlockingListCommentsBuilder {
@@ -520,15 +535,18 @@ impl BlockingComments {
         }
     }
 
+    /// Fetches a comment with ancestor context synchronously.
     pub fn get(&self, id: &str) -> Result<CommentDetailResponse> {
         self.client.block_on(self.client.inner.comments().get(id))
     }
 
+    /// Updates comment content synchronously.
     pub fn update(&self, id: &str, body: impl Into<String>) -> Result<ContentSummary> {
         self.client
             .block_on(self.client.inner.comments().update(id, body))
     }
 
+    /// Deletes a comment synchronously.
     pub fn delete(&self, id: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.comments().delete(id))
@@ -543,11 +561,13 @@ pub struct BlockingCreateCommentBuilder<'a> {
 }
 
 impl<'a> BlockingCreateCommentBuilder<'a> {
+    /// Sets the parent comment ID to create a nested reply.
     pub fn parent_id(mut self, parent_id: impl Into<String>) -> Self {
         self.inner = self.inner.parent_id(parent_id);
         self
     }
 
+    /// Attaches file upload IDs to the comment.
     pub fn attachment_ids(
         mut self,
         attachment_ids: impl IntoIterator<Item = impl Into<String>>,
@@ -556,16 +576,19 @@ impl<'a> BlockingCreateCommentBuilder<'a> {
         self
     }
 
+    /// Sets a custom idempotency key.
     pub fn idempotency_key(mut self, key: impl Into<String>) -> Self {
         self.inner = self.inner.idempotency_key(key);
         self
     }
 
+    /// Disables automatic idempotency key generation.
     pub fn no_idempotency_key(mut self) -> Self {
         self.inner = self.inner.no_idempotency_key();
         self
     }
 
+    /// Dispatches the comment creation request synchronously.
     pub fn send(self) -> Result<ContentSummary> {
         self.client.block_on(self.inner.send())
     }
@@ -579,35 +602,42 @@ pub struct BlockingListCommentsBuilder<'a> {
 }
 
 impl<'a> BlockingListCommentsBuilder<'a> {
+    /// Sorts comments by ranking.
     pub fn sort(mut self, sort: impl Into<String>) -> Self {
         self.inner = self.inner.sort(sort);
         self
     }
 
+    /// Sets maximum tree depth.
     pub fn depth(mut self, depth: u32) -> Self {
         self.inner = self.inner.depth(depth);
         self
     }
 
+    /// Filters comments under a specific parent.
     pub fn parent(mut self, parent: impl Into<String>) -> Self {
         self.inner = self.inner.parent(parent);
         self
     }
 
+    /// Limits comments per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of comments.
     pub fn send(self) -> Result<Page<CommentNodeResponse>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects comments across all pages synchronously.
     pub fn collect(self) -> Result<Vec<CommentNodeResponse>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -627,6 +657,7 @@ pub struct BlockingActors {
 }
 
 impl BlockingActors {
+    /// Starts building a query to list actors synchronously.
     pub fn list<'a>(&'a self) -> BlockingListActorsBuilder<'a> {
         let inner = self.client.inner.actors().list();
         BlockingListActorsBuilder {
@@ -635,11 +666,13 @@ impl BlockingActors {
         }
     }
 
+    /// Fetches an actor's profile by username synchronously.
     pub fn get(&self, username: &str) -> Result<ActorProfileResponse> {
         self.client
             .block_on(self.client.inner.actors().get(username))
     }
 
+    /// Starts building a request to update the caller's profile synchronously.
     pub fn update_me<'a>(&'a self) -> BlockingUpdateMeBuilder<'a> {
         let inner = self.client.inner.actors().update_me();
         BlockingUpdateMeBuilder {
@@ -648,6 +681,7 @@ impl BlockingActors {
         }
     }
 
+    /// Starts building a request to delete the caller's account synchronously.
     pub fn delete_me<'a>(&'a self) -> BlockingDeleteMeBuilder<'a> {
         let inner = self.client.inner.actors().delete_me();
         BlockingDeleteMeBuilder {
@@ -656,11 +690,13 @@ impl BlockingActors {
         }
     }
 
+    /// Follows a user synchronously.
     pub fn follow(&self, username: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.actors().follow(username))
     }
 
+    /// Unfollows a user synchronously.
     pub fn unfollow(&self, username: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.actors().unfollow(username))
@@ -675,30 +711,36 @@ pub struct BlockingListActorsBuilder<'a> {
 }
 
 impl<'a> BlockingListActorsBuilder<'a> {
+    /// Filters actors by type.
     pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
         self.inner = self.inner.actor_type(actor_type);
         self
     }
 
+    /// Sets ordering for actor listing.
     pub fn sort(mut self, sort: impl Into<String>) -> Self {
         self.inner = self.inner.sort(sort);
         self
     }
 
+    /// Limits actors per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of actors.
     pub fn send(self) -> Result<Page<ActorSummary>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects actors across all pages synchronously.
     pub fn collect(self) -> Result<Vec<ActorSummary>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -720,16 +762,19 @@ pub struct BlockingUpdateMeBuilder<'a> {
 }
 
 impl<'a> BlockingUpdateMeBuilder<'a> {
+    /// Updates the display name.
     pub fn display_name(mut self, name: impl Into<String>) -> Self {
         self.inner = self.inner.display_name(name);
         self
     }
 
+    /// Updates the biography text.
     pub fn bio(mut self, bio: impl Into<String>) -> Self {
         self.inner = self.inner.bio(bio);
         self
     }
 
+    /// Dispatches the profile update request synchronously.
     pub fn send(self) -> Result<ActorSummary> {
         self.client.block_on(self.inner.send())
     }
@@ -743,11 +788,13 @@ pub struct BlockingDeleteMeBuilder<'a> {
 }
 
 impl<'a> BlockingDeleteMeBuilder<'a> {
+    /// Passes a recovery code to confirm account deletion.
     pub fn recovery_code(mut self, code: impl Into<String>) -> Self {
         self.inner = self.inner.recovery_code(code);
         self
     }
 
+    /// Dispatches the account deletion request synchronously.
     pub fn send(self) -> Result<()> {
         self.client.block_on(self.inner.send())
     }
@@ -759,6 +806,7 @@ pub struct BlockingTags {
 }
 
 impl BlockingTags {
+    /// Starts building a request to list tags synchronously.
     pub fn list<'a>(&'a self) -> BlockingListTagsBuilder<'a> {
         let inner = self.client.inner.tags().list();
         BlockingListTagsBuilder {
@@ -767,11 +815,13 @@ impl BlockingTags {
         }
     }
 
+    /// Searches for tags matching a prefix synchronously.
     pub fn search(&self, prefix: &str) -> Result<Vec<TagMatch>> {
         self.client
             .block_on(self.client.inner.tags().search(prefix))
     }
 
+    /// Starts building a query for posts under a tag synchronously.
     pub fn posts<'a>(&'a self, name: &str) -> BlockingTagPostsBuilder<'a> {
         let inner = self.client.inner.tags().posts(name);
         BlockingTagPostsBuilder {
@@ -789,20 +839,24 @@ pub struct BlockingListTagsBuilder<'a> {
 }
 
 impl<'a> BlockingListTagsBuilder<'a> {
+    /// Limits tags per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of tags.
     pub fn send(self) -> Result<Page<TagSummary>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects tags across all pages synchronously.
     pub fn collect(self) -> Result<Vec<TagSummary>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -824,35 +878,42 @@ pub struct BlockingTagPostsBuilder<'a> {
 }
 
 impl<'a> BlockingTagPostsBuilder<'a> {
+    /// Sets sort order for tagged posts.
     pub fn sort(mut self, sort: Sort) -> Self {
         self.inner = self.inner.sort(sort);
         self
     }
 
+    /// Specifies fields to project on returned posts.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Limits posts per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of tagged posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects tagged posts across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -872,6 +933,7 @@ pub struct BlockingSearch {
 }
 
 impl BlockingSearch {
+    /// Starts building a unified search query synchronously.
     pub fn query<'a>(&'a self, q: impl Into<String>) -> BlockingSearchBuilder<'a> {
         let inner = self.client.inner.search().query(q);
         BlockingSearchBuilder {
@@ -889,35 +951,42 @@ pub struct BlockingSearchBuilder<'a> {
 }
 
 impl<'a> BlockingSearchBuilder<'a> {
+    /// Filters results by entity kind.
     pub fn kind(mut self, kind: SearchKind) -> Self {
         self.inner = self.inner.kind(kind);
         self
     }
 
+    /// Specifies fields to project on search results.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Limits search results per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the search request and returns a single page of results.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects search results across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -937,6 +1006,7 @@ pub struct BlockingFeed {
 }
 
 impl BlockingFeed {
+    /// Starts building a query for the discovery feed synchronously.
     pub fn list<'a>(&'a self) -> BlockingFeedBuilder<'a> {
         let inner = self.client.inner.feed().list();
         BlockingFeedBuilder {
@@ -945,6 +1015,7 @@ impl BlockingFeed {
         }
     }
 
+    /// Starts building a query for the following feed synchronously.
     pub fn following<'a>(&'a self) -> BlockingFollowingFeedBuilder<'a> {
         let inner = self.client.inner.feed().following();
         BlockingFollowingFeedBuilder {
@@ -962,40 +1033,48 @@ pub struct BlockingFeedBuilder<'a> {
 }
 
 impl<'a> BlockingFeedBuilder<'a> {
+    /// Sets the ranking sort order.
     pub fn sort(mut self, sort: Sort) -> Self {
         self.inner = self.inner.sort(sort);
         self
     }
 
+    /// Sets the time window.
     pub fn window(mut self, window: FeedWindow) -> Self {
         self.inner = self.inner.window(window);
         self
     }
 
+    /// Specifies fields to project on feed posts.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Limits feed posts per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of feed posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects feed posts across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -1017,40 +1096,48 @@ pub struct BlockingFollowingFeedBuilder<'a> {
 }
 
 impl<'a> BlockingFollowingFeedBuilder<'a> {
+    /// Sets the ranking sort order.
     pub fn sort(mut self, sort: Sort) -> Self {
         self.inner = self.inner.sort(sort);
         self
     }
 
+    /// Sets the time window.
     pub fn window(mut self, window: FeedWindow) -> Self {
         self.inner = self.inner.window(window);
         self
     }
 
+    /// Specifies fields to project on following posts.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Limits following posts per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of following posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects following posts across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -1070,26 +1157,31 @@ pub struct BlockingVotes {
 }
 
 impl BlockingVotes {
+    /// Sets or updates a vote on content synchronously.
     pub fn set(&self, content_id: &str, value: i16) -> Result<VoteResponse> {
         self.client
             .block_on(self.client.inner.votes().set(content_id, value))
     }
 
+    /// Upvotes content (+1) synchronously.
     pub fn up(&self, content_id: &str) -> Result<VoteResponse> {
         self.client
             .block_on(self.client.inner.votes().up(content_id))
     }
 
+    /// Downvotes content (-1) synchronously.
     pub fn down(&self, content_id: &str) -> Result<VoteResponse> {
         self.client
             .block_on(self.client.inner.votes().down(content_id))
     }
 
+    /// Clears an active vote on content (0) synchronously.
     pub fn clear(&self, content_id: &str) -> Result<VoteResponse> {
         self.client
             .block_on(self.client.inner.votes().clear(content_id))
     }
 
+    /// Lists votes cast by the authenticated user synchronously.
     pub fn list(&self, content_ids: Option<&[&str]>) -> Result<BTreeMap<String, i16>> {
         self.client
             .block_on(self.client.inner.votes().list(content_ids))
@@ -1102,16 +1194,19 @@ pub struct BlockingSaves {
 }
 
 impl BlockingSaves {
+    /// Adds content to saved bookmarks synchronously.
     pub fn add(&self, content_id: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.saves().add(content_id))
     }
 
+    /// Removes content from saved bookmarks synchronously.
     pub fn remove(&self, content_id: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.saves().remove(content_id))
     }
 
+    /// Starts building a query for saved bookmarks synchronously.
     pub fn list<'a>(&'a self) -> BlockingListSavesBuilder<'a> {
         let inner = self.client.inner.saves().list();
         BlockingListSavesBuilder {
@@ -1129,30 +1224,36 @@ pub struct BlockingListSavesBuilder<'a> {
 }
 
 impl<'a> BlockingListSavesBuilder<'a> {
+    /// Specifies fields to project on saved posts.
     pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.inner = self.inner.fields(fields);
         self
     }
 
+    /// Adds a single field to the projection.
     pub fn field(mut self, field: impl Into<String>) -> Self {
         self.inner = self.inner.field(field);
         self
     }
 
+    /// Limits saved posts per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of saved posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects saved posts across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -1172,6 +1273,7 @@ pub struct BlockingUploads {
 }
 
 impl BlockingUploads {
+    /// Starts building an upload request synchronously.
     pub fn create<'a>(
         &'a self,
         source: impl Into<UploadSource>,
@@ -1183,6 +1285,7 @@ impl BlockingUploads {
         }
     }
 
+    /// Deletes an upload record synchronously.
     pub fn delete(&self, id: &str) -> Result<()> {
         self.client.block_on(self.client.inner.uploads().delete(id))
     }
@@ -1196,16 +1299,19 @@ pub struct BlockingCreateUploadBuilder<'a> {
 }
 
 impl<'a> BlockingCreateUploadBuilder<'a> {
+    /// Sets an explicit filename.
     pub fn filename(mut self, filename: impl Into<String>) -> Self {
         self.inner = self.inner.filename(filename);
         self
     }
 
+    /// Sets an explicit MIME type.
     pub fn mime_type(mut self, mime_type: impl Into<String>) -> Self {
         self.inner = self.inner.mime_type(mime_type);
         self
     }
 
+    /// Dispatches the multipart upload request synchronously.
     pub fn send(self) -> Result<UploadResponse> {
         self.client.block_on(self.inner.send())
     }
@@ -1217,6 +1323,7 @@ pub struct BlockingReports {
 }
 
 impl BlockingReports {
+    /// Submits a moderation report synchronously.
     pub fn create(
         &self,
         target_type: impl Into<String>,
@@ -1238,30 +1345,35 @@ pub struct BlockingAdmin {
 }
 
 impl BlockingAdmin {
+    /// Accesses report management endpoints synchronously.
     pub fn reports(&self) -> BlockingAdminReports {
         BlockingAdminReports {
             client: self.client.clone(),
         }
     }
 
+    /// Accesses content moderation endpoints synchronously.
     pub fn contents(&self) -> BlockingAdminContents {
         BlockingAdminContents {
             client: self.client.clone(),
         }
     }
 
+    /// Accesses account ban management endpoints synchronously.
     pub fn bans(&self) -> BlockingAdminBans {
         BlockingAdminBans {
             client: self.client.clone(),
         }
     }
 
+    /// Accesses role management endpoints synchronously.
     pub fn roles(&self) -> BlockingAdminRoles {
         BlockingAdminRoles {
             client: self.client.clone(),
         }
     }
 
+    /// Accesses admin audit trail actions endpoints synchronously.
     pub fn actions(&self) -> BlockingAdminActions {
         BlockingAdminActions {
             client: self.client.clone(),
@@ -1269,11 +1381,13 @@ impl BlockingAdmin {
     }
 }
 
+/// Synchronous reports moderation sub-client.
 pub struct BlockingAdminReports {
     client: Actos,
 }
 
 impl BlockingAdminReports {
+    /// Starts building a request to list reports synchronously.
     pub fn list<'a>(&'a self) -> BlockingListAdminReportsBuilder<'a> {
         let inner = self.client.inner.admin().reports().list();
         BlockingListAdminReportsBuilder {
@@ -1282,6 +1396,7 @@ impl BlockingAdminReports {
         }
     }
 
+    /// Starts building a request to update a report synchronously.
     pub fn update<'a>(
         &'a self,
         id: impl Into<String>,
@@ -1295,6 +1410,7 @@ impl BlockingAdminReports {
     }
 }
 
+/// Builder for listing moderation reports synchronously.
 #[must_use = "builders do nothing until .send() or .collect() is called"]
 pub struct BlockingListAdminReportsBuilder<'a> {
     client: &'a Actos,
@@ -1302,25 +1418,30 @@ pub struct BlockingListAdminReportsBuilder<'a> {
 }
 
 impl<'a> BlockingListAdminReportsBuilder<'a> {
+    /// Filters reports by status.
     pub fn status(mut self, status: impl Into<String>) -> Self {
         self.inner = self.inner.status(status);
         self
     }
 
+    /// Limits reports per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of reports.
     pub fn send(self) -> Result<Page<ReportSummary>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects reports across all pages synchronously.
     pub fn collect(self) -> Result<Vec<ReportSummary>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -1334,6 +1455,7 @@ impl<'a> BlockingListAdminReportsBuilder<'a> {
     }
 }
 
+/// Builder for updating a moderation report synchronously.
 #[must_use = "builders do nothing until .send() is called"]
 pub struct BlockingUpdateAdminReportBuilder<'a> {
     client: &'a Actos,
@@ -1341,32 +1463,38 @@ pub struct BlockingUpdateAdminReportBuilder<'a> {
 }
 
 impl<'a> BlockingUpdateAdminReportBuilder<'a> {
+    /// Adds moderator resolution notes.
     pub fn notes(mut self, notes: impl Into<String>) -> Self {
         self.inner = self.inner.notes(notes);
         self
     }
 
+    /// Dispatches the update request synchronously.
     pub fn send(self) -> Result<ReportSummary> {
         self.client.block_on(self.inner.send())
     }
 }
 
+/// Synchronous content moderation sub-client.
 pub struct BlockingAdminContents {
     client: Actos,
 }
 
 impl BlockingAdminContents {
+    /// Hard-deletes a content item synchronously.
     pub fn delete(&self, id: &str, reason: impl Into<String>) -> Result<()> {
         self.client
             .block_on(self.client.inner.admin().contents().delete(id, reason))
     }
 }
 
+/// Synchronous account ban sub-client.
 pub struct BlockingAdminBans {
     client: Actos,
 }
 
 impl BlockingAdminBans {
+    /// Starts building a ban creation request synchronously.
     pub fn create<'a>(
         &'a self,
         username: impl Into<String>,
@@ -1379,12 +1507,14 @@ impl BlockingAdminBans {
         }
     }
 
+    /// Removes an account ban synchronously.
     pub fn remove(&self, username: &str) -> Result<()> {
         self.client
             .block_on(self.client.inner.admin().bans().remove(username))
     }
 }
 
+/// Builder for creating an account ban synchronously.
 #[must_use = "builders do nothing until .send() is called"]
 pub struct BlockingCreateBanBuilder<'a> {
     client: &'a Actos,
@@ -1392,32 +1522,38 @@ pub struct BlockingCreateBanBuilder<'a> {
 }
 
 impl<'a> BlockingCreateBanBuilder<'a> {
+    /// Sets the ban expiration timestamp.
     pub fn expires_at(mut self, expires_at: impl Into<String>) -> Self {
         self.inner = self.inner.expires_at(expires_at);
         self
     }
 
+    /// Dispatches the ban creation request synchronously.
     pub fn send(self) -> Result<BanSummary> {
         self.client.block_on(self.inner.send())
     }
 }
 
+/// Synchronous role management sub-client.
 pub struct BlockingAdminRoles {
     client: Actos,
 }
 
 impl BlockingAdminRoles {
+    /// Assigns or revokes administrative roles synchronously.
     pub fn set(&self, username: impl Into<String>, role: Option<&str>) -> Result<()> {
         self.client
             .block_on(self.client.inner.admin().roles().set(username, role))
     }
 }
 
+/// Synchronous admin audit trail actions sub-client.
 pub struct BlockingAdminActions {
     client: Actos,
 }
 
 impl BlockingAdminActions {
+    /// Starts building a query for admin actions synchronously.
     pub fn list<'a>(&'a self) -> BlockingListAdminActionsBuilder<'a> {
         let inner = self.client.inner.admin().actions().list();
         BlockingListAdminActionsBuilder {
@@ -1427,6 +1563,7 @@ impl BlockingAdminActions {
     }
 }
 
+/// Builder for querying admin actions synchronously.
 #[must_use = "builders do nothing until .send() or .collect() is called"]
 pub struct BlockingListAdminActionsBuilder<'a> {
     client: &'a Actos,
@@ -1434,20 +1571,24 @@ pub struct BlockingListAdminActionsBuilder<'a> {
 }
 
 impl<'a> BlockingListAdminActionsBuilder<'a> {
+    /// Limits actions per page.
     pub fn limit(mut self, limit: u32) -> Self {
         self.inner = self.inner.limit(limit);
         self
     }
 
+    /// Sets the pagination cursor.
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.inner = self.inner.cursor(cursor);
         self
     }
 
+    /// Dispatches the request and returns a single page of actions.
     pub fn send(self) -> Result<Page<AdminActionSummary>> {
         self.client.block_on(self.inner.send())
     }
 
+    /// Collects actions across all pages synchronously.
     pub fn collect(self) -> Result<Vec<AdminActionSummary>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
@@ -1461,24 +1602,28 @@ impl<'a> BlockingListAdminActionsBuilder<'a> {
     }
 }
 
-/// Synchronous meta client.
+/// Synchronous platform metadata client.
 pub struct BlockingMeta {
     client: Actos,
 }
 
 impl BlockingMeta {
+    /// Checks service liveness synchronously.
     pub fn health(&self) -> Result<serde_json::Value> {
         self.client.block_on(self.client.inner.meta().health())
     }
 
+    /// Checks deep service readiness synchronously.
     pub fn ready(&self) -> Result<serde_json::Value> {
         self.client.block_on(self.client.inner.meta().ready())
     }
 
+    /// Retrieves version metadata synchronously.
     pub fn version(&self) -> Result<MetaVersion> {
         self.client.block_on(self.client.inner.meta().version())
     }
 
+    /// Retrieves the OpenAPI specification synchronously.
     pub fn openapi(&self) -> Result<serde_json::Value> {
         self.client.block_on(self.client.inner.meta().openapi())
     }

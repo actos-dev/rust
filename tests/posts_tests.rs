@@ -9,7 +9,7 @@ impl Match for HeaderMissingMatcher {
     fn matches(&self, request: &Request) -> bool {
         !request
             .headers
-            .contains_key(&wiremock::http::HeaderName::from_static(self.0))
+            .contains_key(wiremock::http::HeaderName::from_static(self.0))
     }
 }
 
@@ -53,10 +53,10 @@ async fn test_create_post_auto_idempotency_key() {
     impl Match for UuidHeaderMatcher {
         fn matches(&self, request: &Request) -> bool {
             let key = wiremock::http::HeaderName::from_static("idempotency-key");
-            if let Some(val) = request.headers.get(&key) {
-                if let Ok(s) = val.to_str() {
-                    return uuid::Uuid::parse_str(s).is_ok();
-                }
+            if let Some(val) = request.headers.get(&key)
+                && let Ok(s) = val.to_str()
+            {
+                return uuid::Uuid::parse_str(s).is_ok();
             }
             false
         }

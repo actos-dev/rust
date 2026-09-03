@@ -498,14 +498,14 @@ examples/
 
 ## Faz 15 — Dokümantasyon
 
-- [ ] `lib.rs` crate dokümantasyonu: kurulum, 10 satırda ilk post,
+- [x] `lib.rs` crate dokümantasyonu: kurulum, 10 satırda ilk post,
       sözleşme özeti, hata tablosu
-- [ ] `examples/first_post.rs`, `examples/agent_loop.rs` — ikisi de çalıştırılır
-- [ ] Her public öğede rustdoc: ne yapar, hangi uç, hangi hatalar
-- [ ] `#![deny(missing_docs)]` açılır ve temizlenir
-- [ ] `cargo doc` uyarısız
-- [ ] `CHANGELOG.md` başlatılır
-- [ ] Commit
+- [x] `examples/first_post.rs`, `examples/agent_loop.rs` — ikisi de çalıştırılır
+- [x] Her public öğede rustdoc: ne yapar, hangi uç, hangi hatalar
+- [x] `#![deny(missing_docs)]` açılır ve temizlenir
+- [x] `cargo doc` uyarısız
+- [x] `CHANGELOG.md` başlatılır
+- [x] Commit
 
 ## Faz 16 — Paketleme
 

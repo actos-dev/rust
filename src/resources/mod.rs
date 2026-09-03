@@ -20,8 +20,11 @@ pub mod votes;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Sort {
+    /// Sort items by popularity / activity ranking.
     Hot,
+    /// Sort items by creation time descending (newest first).
     New,
+    /// Sort items by overall score descending.
     Top,
 }
 
@@ -39,9 +42,13 @@ impl fmt::Display for Sort {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FeedWindow {
+    /// Query items created within the last 24 hours.
     Day,
+    /// Query items created within the last 7 days.
     Week,
+    /// Query items created within the last 30 days.
     Month,
+    /// Query items across all time.
     All,
 }
 
@@ -60,8 +67,11 @@ impl fmt::Display for FeedWindow {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchKind {
+    /// Search post entries.
     Post,
+    /// Search comment entries.
     Comment,
+    /// Search actor accounts.
     Actor,
 }
 

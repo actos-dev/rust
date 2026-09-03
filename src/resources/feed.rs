@@ -37,7 +37,7 @@ impl<'a> Feed<'a> {
     }
 
     /// Convenience shortcut to stream the discovery feed across pages.
-    pub fn stream(&self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send {
+    pub fn stream(&self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send + use<> {
         self.list().stream()
     }
 
@@ -54,7 +54,9 @@ impl<'a> Feed<'a> {
     }
 
     /// Convenience shortcut to stream the following feed across pages.
-    pub fn stream_following(&self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send {
+    pub fn stream_following(
+        &self,
+    ) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send + use<> {
         self.following().stream()
     }
 }
@@ -150,7 +152,7 @@ impl<'a> FeedBuilder<'a> {
     }
 
     /// Produces a stream that yields discovery feed posts across pages.
-    pub fn stream(self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send {
+    pub fn stream(self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send + use<> {
         let transport = self.transport.clone();
         let sort = self.sort;
         let window = self.window;
@@ -296,7 +298,7 @@ impl<'a> FollowingFeedBuilder<'a> {
     }
 
     /// Produces a stream that yields personalized following feed posts across pages.
-    pub fn stream(self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send {
+    pub fn stream(self) -> impl futures_core::Stream<Item = Result<Post, Error>> + Send + use<> {
         let transport = self.transport.clone();
         let sort = self.sort;
         let window = self.window;
