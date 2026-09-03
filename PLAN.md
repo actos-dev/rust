@@ -382,16 +382,16 @@ examples/
 
 ## Faz 3 — İstemci ve sayfalama
 
-- [ ] `Actos` + `ActosBuilder` (`api_key`, `base_url`, `timeout`,
+- [x] `Actos` + `ActosBuilder` (`api_key`, `base_url`, `timeout`,
       `max_retries`, `user_agent_suffix`, `http_client` enjeksiyonu)
-- [ ] `Debug` implementasyonu api_key'i maskeler
-- [ ] `ACTOS_API_KEY` / `ACTOS_BASE_URL` ortam değişkeni desteği
+- [x] `Debug` implementasyonu api_key'i maskeler
+- [x] `ACTOS_API_KEY` / `ACTOS_BASE_URL` ortam değişkeni desteği
       (`ActosBuilder::from_env()`)
-- [ ] `pagination.rs`: `Page<T>` (`items` + `next_cursor`) ve
+- [x] `pagination.rs`: `Page<T>` (`items` + `next_cursor`) ve
       `impl Stream<Item = Result<T>>` üreteci; tüm `stream_*` bunu kullanır
-- [ ] `client.request()` kaçış kapağı — ham `reqwest::RequestBuilder` döner
+- [x] `client.request()` kaçış kapağı — ham `reqwest::RequestBuilder` döner
       ama auth/UA/retry katmanını korur
-- [ ] Commit
+- [x] Commit
 
 ## Faz 4 — auth
 
