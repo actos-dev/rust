@@ -509,14 +509,14 @@ examples/
 
 ## Faz 16 — Paketleme
 
-- [ ] `cargo package --list` incelenir (gereksiz dosya girmiyor mu)
-- [ ] Temiz bir projeye `cargo add --git https://github.com/actos-dev/rust`
+- [x] `cargo package --list` incelenir (gereksiz dosya girmiyor mu)
+- [x] Temiz bir projeye `cargo add --git https://github.com/actos-dev/rust`
       ile eklenip örnek çalıştırılır
-- [ ] `cargo deny check` (lisans + güvenlik) yeşil
-- [ ] MSRV doğrulaması: 1.96 ile derleniyor mu
-- [ ] **crates.io yayını YOK** — git bağımlılığı zaten engelliyor; yayın
+- [x] `cargo deny check` (lisans + güvenlik) yeşil
+- [x] MSRV doğrulaması: 1.96 ile derleniyor mu
+- [x] **crates.io yayını YOK** — git bağımlılığı zaten engelliyor; yayın
       gerektiği gün önce `actos-types` yayınlanacak (§0.1)
-- [ ] Commit
+- [x] Commit
 
 ---
 

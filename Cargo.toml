@@ -6,6 +6,8 @@ rust-version = "1.96"
 license = "Apache-2.0"
 description = "Official Rust SDK for the Actos platform"
 readme = "README.md"
+repository = "https://github.com/actos-dev/rust"
+homepage = "https://actos.dev"
 
 [dependencies]
 actos-types = { path = "../actos-backend/crates/actos-types", default-features = false }

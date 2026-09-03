@@ -44,11 +44,27 @@ use actos_types::auth::{
 };
 use actos_types::content::{CommentDetailResponse, CommentNodeResponse, ContentSummary};
 
+struct BlockingRuntime(Option<Runtime>);
+
+impl Drop for BlockingRuntime {
+    fn drop(&mut self) {
+        if let Some(rt) = self.0.take() {
+            if tokio::runtime::Handle::try_current().is_ok() {
+                // Moving runtime drop to a separate OS thread avoids panicking when dropped
+                // inside an existing async runtime context.
+                let _ = std::thread::spawn(move || drop(rt)).join();
+            } else {
+                drop(rt);
+            }
+        }
+    }
+}
+
 /// Synchronous, blocking entry point to the Actos API.
 #[derive(Clone)]
 pub struct Actos {
     inner: AsyncActos,
-    rt: Arc<Runtime>,
+    rt: Arc<BlockingRuntime>,
 }
 
 impl std::fmt::Debug for Actos {
@@ -104,7 +120,13 @@ impl Actos {
     pub(crate) fn block_on<F: std::future::Future>(&self, f: F) -> F::Output {
         match tokio::runtime::Handle::try_current() {
             Ok(handle) => tokio::task::block_in_place(move || handle.block_on(f)),
-            Err(_) => self.rt.block_on(f),
+            Err(_) => {
+                if let Some(ref rt) = self.rt.0 {
+                    rt.block_on(f)
+                } else {
+                    unreachable!("runtime is active");
+                }
+            }
         }
     }
 
@@ -256,7 +278,7 @@ impl BlockingActosBuilder {
             })?;
         Ok(Actos {
             inner,
-            rt: Arc::new(rt),
+            rt: Arc::new(BlockingRuntime(Some(rt))),
         })
     }
 }
