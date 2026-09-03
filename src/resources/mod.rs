@@ -80,13 +80,17 @@ pub use actors::{
     FollowersBuilder, FollowingBuilder, ListActorsBuilder, Post, UpdateMeBuilder,
 };
 pub use actos_types::content::{CommentDetailResponse, CommentNodeResponse, CommentThreadResponse};
-pub use admin::Admin;
+pub use admin::{
+    Admin, AdminActionListResponse, AdminActionSummary, AdminActions, AdminBans, AdminContents,
+    AdminReports, AdminRoles, BanSummary, CreateBanBuilder, ListAdminActionsBuilder,
+    ListAdminReportsBuilder, ReportListResponse, UpdateAdminReportBuilder,
+};
 pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::{Comments, CreateCommentBuilder, ListCommentsBuilder};
 pub use feed::{Feed, FeedBuilder, FollowingFeedBuilder};
 pub use meta::Meta;
 pub use posts::{CreatePostBuilder, GetPostBuilder, Posts, UpdatePostBuilder};
-pub use reports::Reports;
+pub use reports::{ReportSummary, Reports};
 pub use saves::{ListSavesBuilder, SaveListResponse, Saves};
 pub use search::{Search, SearchBuilder};
 pub use tags::{ListTagsBuilder, TagMatch, TagPostsBuilder, TagSummary, Tags};

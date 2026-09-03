@@ -199,6 +199,12 @@ impl Error {
         self.code() == Some(actos_types::ErrorCode::RateLimited)
     }
 
+    /// Checks if the error represents `FORBIDDEN` (403).
+    #[must_use]
+    pub fn is_forbidden(&self) -> bool {
+        self.code() == Some(actos_types::ErrorCode::Forbidden) || self.status() == Some(403)
+    }
+
     /// Returns `true` if this error can safely be retried per SDK Contract §2.6:
     /// - Transport errors (network disconnect, timeout)
     /// - 5xx server errors

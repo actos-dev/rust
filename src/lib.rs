@@ -30,8 +30,8 @@ pub use client::{Actos, ActosBuilder};
 pub use error::{Error, RateLimit, Result};
 pub use pagination::{Page, paginate_stream, paginate_stream_with_cursor};
 pub use resources::{
-    FeedWindow, SaveListResponse, SearchKind, Sort, TagMatch, TagSummary, UploadResponse,
-    UploadSource, VoteMapResponse, VoteResponse,
+    AdminActionSummary, BanSummary, FeedWindow, ReportSummary, SaveListResponse, SearchKind, Sort,
+    TagMatch, TagSummary, UploadResponse, UploadSource, VoteMapResponse, VoteResponse,
 };
 pub use transport::Transport;
 

@@ -446,10 +446,10 @@ examples/
 
 ## Faz 11 — reports ve admin
 
-- [ ] `reports().create`
-- [ ] `admin()` alt kaynakları (§3'teki 7 metot)
-- [ ] Yetkisiz çağrı → `ErrorCode::Forbidden` testi
-- [ ] Commit
+- [x] `reports().create`
+- [x] `admin()` alt kaynakları (§3'teki 7 metot)
+- [x] Yetkisiz çağrı → `ErrorCode::Forbidden` testi
+- [x] Commit
 
 ## Faz 12 — meta, inbox ve doğrulama
 
