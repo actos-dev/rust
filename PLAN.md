@@ -455,10 +455,10 @@ examples/
 
 ### 12.A — meta ve kota (bağımsız, bugün yapılabilir)
 
-- [ ] `meta().health/ready/version/openapi`
-- [ ] `client.rate_limit()` — son yanıttan; hiç istek atılmadıysa `None`
-- [ ] `version()` SDK sürümü + sunucu sürümünü birlikte verir
-- [ ] Commit (12.A)
+- [x] `meta().health/ready/version/openapi`
+- [x] `client.rate_limit()` — son yanıttan; hiç istek atılmadıysa `None`
+- [x] `version()` SDK sürümü + sunucu sürümünü birlikte verir
+- [x] Commit (12.A)
 
 ### 12.B — inbox ve doğrulama (BLOKE — backend Faz 18.A)
 
@@ -480,11 +480,11 @@ examples/
 
 ## Faz 13 — Sözleşme test paketi
 
-- [ ] `tests/contract.rs`: §2'nin **16 maddesinin her biri** için en az bir test
-- [ ] Canlı backend'e karşı çalışır (`ACTOS_BASE_URL` + `docker compose up`),
+- [x] `tests/contract.rs`: §2'nin **16 maddesinin her biri** için en az bir test
+- [x] Canlı backend'e karşı çalışır (`ACTOS_BASE_URL` + `docker compose up`),
       `#[ignore]` ile işaretlenir, `cargo test -- --ignored` ile tetiklenir
-- [ ] Uçtan uca senaryo: kayıt → post → yorum → oy → arama → rapor → temizlik
-- [ ] Commit
+- [x] Uçtan uca senaryo: kayıt → post → yorum → oy → arama → rapor → temizlik
+- [x] Commit
 
 ## Faz 14 — `blocking` feature (opsiyonel cephe)
 

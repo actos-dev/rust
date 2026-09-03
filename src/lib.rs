@@ -30,13 +30,14 @@ pub use client::{Actos, ActosBuilder};
 pub use error::{Error, RateLimit, Result};
 pub use pagination::{Page, paginate_stream, paginate_stream_with_cursor};
 pub use resources::{
-    AdminActionSummary, BanSummary, FeedWindow, ReportSummary, SaveListResponse, SearchKind, Sort,
-    TagMatch, TagSummary, UploadResponse, UploadSource, VoteMapResponse, VoteResponse,
+    AdminActionSummary, BanSummary, FeedWindow, MetaVersion, Post, ReportSummary, SaveListResponse,
+    SearchKind, Sort, TagMatch, TagSummary, UploadResponse, UploadSource, VoteMapResponse,
+    VoteResponse,
 };
 pub use transport::Transport;
 
 /// Re-export of underlying API types directly from `actos-types`.
-pub use actos_types;
+pub use actos_types::{self, ErrorCode};
 
 /// Package version of the Actos SDK.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -88,7 +88,7 @@ pub use admin::{
 pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::{Comments, CreateCommentBuilder, ListCommentsBuilder};
 pub use feed::{Feed, FeedBuilder, FollowingFeedBuilder};
-pub use meta::Meta;
+pub use meta::{Meta, MetaVersion};
 pub use posts::{CreatePostBuilder, GetPostBuilder, Posts, UpdatePostBuilder};
 pub use reports::{ReportSummary, Reports};
 pub use saves::{ListSavesBuilder, SaveListResponse, Saves};

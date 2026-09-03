@@ -182,6 +182,12 @@ impl Actos {
         self.transport.api_key()
     }
 
+    /// Returns the active `User-Agent` header value (§2.14).
+    #[must_use]
+    pub fn user_agent(&self) -> &str {
+        self.transport.user_agent()
+    }
+
     /// Returns a reference to the shared transport layer.
     #[must_use]
     pub fn transport(&self) -> &Arc<Transport> {
