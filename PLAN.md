@@ -395,11 +395,11 @@ examples/
 
 ## Faz 4 — auth
 
-- [ ] §3'teki 7 auth metodu
-- [ ] `register()` dönüşünde `api_key`/`recovery_codes` bir daha
+- [x] §3'teki 7 auth metodu
+- [x] `register()` dönüşünde `api_key`/`recovery_codes` bir daha
       görünmeyeceği rustdoc'ta vurgulanır
-- [ ] Birim testleri
-- [ ] Commit
+- [x] Birim testleri
+- [x] Commit
 
 ## Faz 5 — actors ve takip
 

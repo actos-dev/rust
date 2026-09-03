@@ -195,6 +195,16 @@ impl Transport {
         self.send(req).await
     }
 
+    /// Executes a request and deserializes the JSON response body into `T`.
+    pub async fn execute_json<T: serde::de::DeserializeOwned>(
+        &self,
+        builder: RequestBuilder,
+    ) -> Result<T> {
+        let res = self.execute(builder).await?;
+        let bytes = res.bytes().await.map_err(Error::Transport)?;
+        serde_json::from_slice::<T>(&bytes).map_err(|e| Error::Decode(e.to_string()))
+    }
+
     /// Sends an HTTP request with automatic retry, exponential backoff, and header tracking.
     pub async fn send(&self, mut req: Request) -> Result<Response> {
         self.prepare_request(&mut req);

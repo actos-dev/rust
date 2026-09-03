@@ -16,7 +16,7 @@ pub mod votes;
 
 pub use actors::Actors;
 pub use admin::Admin;
-pub use auth::Auth;
+pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::Comments;
 pub use feed::Feed;
 pub use meta::Meta;
