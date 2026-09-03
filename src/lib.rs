@@ -21,8 +21,10 @@
 #![forbid(unsafe_code)]
 
 pub mod error;
+pub mod transport;
 
 pub use error::{Error, RateLimit, Result};
+pub use transport::Transport;
 
 /// Re-export of underlying API types directly from `actos-types`.
 pub use actos_types;

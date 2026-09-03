@@ -368,17 +368,17 @@ examples/
 
 ## Faz 2 — Taşıma katmanı
 
-- [ ] `transport.rs`: `reqwest::Client` sarmalayıcısı
-- [ ] `Authorization: Bearer`, `User-Agent`, `Content-Type` header'ları
-- [ ] Zaman aşımı (varsayılan 30 sn), bağlantı havuzu paylaşımı
-- [ ] Yeniden deneme: §2.6 kuralı, exponential + full jitter,
+- [x] `transport.rs`: `reqwest::Client` sarmalayıcısı
+- [x] `Authorization: Bearer`, `User-Agent`, `Content-Type` header'ları
+- [x] Zaman aşımı (varsayılan 30 sn), bağlantı havuzu paylaşımı
+- [x] Yeniden deneme: §2.6 kuralı, exponential + full jitter,
       `Retry-After` önceliği, `max_retries` (varsayılan 2)
-- [ ] `X-RateLimit-*` ayrıştırma → `RateLimit` (`Arc<Mutex<Option<..>>>` ile
+- [x] `X-RateLimit-*` ayrıştırma → `RateLimit` (`Arc<Mutex<Option<..>>>` ile
       istemcide saklanır, `Clone`'lar aynı değeri görür)
-- [ ] `base_url` normalizasyonu (sondaki `/` sorun çıkarmaz)
-- [ ] Birim testleri (wiremock): retry sayısı, 4xx'te denememe,
+- [x] `base_url` normalizasyonu (sondaki `/` sorun çıkarmaz)
+- [x] Birim testleri (wiremock): retry sayısı, 4xx'te denememe,
       idempotency'siz POST'ta 5xx denememe, `Retry-After`'a uyma
-- [ ] Commit
+- [x] Commit
 
 ## Faz 3 — İstemci ve sayfalama
 

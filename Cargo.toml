@@ -17,6 +17,7 @@ thiserror = "2.0"
 futures-core = "0.3"
 futures-util = "0.3"
 uuid = { version = "1.15", features = ["v4"] }
+fastrand = "2.3"
 
 [dev-dependencies]
 tokio = { version = "1.43", features = ["full", "test-util"] }
