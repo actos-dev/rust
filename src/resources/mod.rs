@@ -18,9 +18,10 @@ pub use actors::{
     ActorCommentsBuilder, ActorPostsBuilder, Actors, CommentSummary, DeleteMeBuilder,
     FollowersBuilder, FollowingBuilder, ListActorsBuilder, Post, UpdateMeBuilder,
 };
+pub use actos_types::content::{CommentDetailResponse, CommentNodeResponse, CommentThreadResponse};
 pub use admin::Admin;
 pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
-pub use comments::Comments;
+pub use comments::{Comments, CreateCommentBuilder, ListCommentsBuilder};
 pub use feed::Feed;
 pub use meta::Meta;
 pub use posts::{CreatePostBuilder, GetPostBuilder, Posts, UpdatePostBuilder};

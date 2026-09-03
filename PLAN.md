@@ -417,10 +417,10 @@ examples/
 
 ## Faz 7 — comments
 
-- [ ] 5 metot + `stream`
-- [ ] `parent` ile iç içe yorum; derinlik sınırı (32) sunucudan gelir,
+- [x] 5 metot + `stream`
+- [x] `parent` ile iç içe yorum; derinlik sınırı (32) sunucudan gelir,
       SDK kendi kontrolünü koymaz — sadece hatayı iletir
-- [ ] Commit
+- [x] Commit
 
 ## Faz 8 — tags, search, feed
 
