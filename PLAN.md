@@ -431,9 +431,9 @@ examples/
 
 ## Faz 9 — votes ve saves
 
-- [ ] `votes().set/up/down/clear/list`, `saves().add/remove/list`
-- [ ] İdempotent `PUT` davranışı test edilir
-- [ ] Commit
+- [x] `votes().set/up/down/clear/list`, `saves().add/remove/list`
+- [x] İdempotent `PUT` davranışı test edilir
+- [x] Commit
 
 ## Faz 10 — uploads
 

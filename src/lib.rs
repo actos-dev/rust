@@ -29,7 +29,10 @@ pub mod transport;
 pub use client::{Actos, ActosBuilder};
 pub use error::{Error, RateLimit, Result};
 pub use pagination::{Page, paginate_stream, paginate_stream_with_cursor};
-pub use resources::{FeedWindow, SearchKind, Sort, TagMatch, TagSummary};
+pub use resources::{
+    FeedWindow, SaveListResponse, SearchKind, Sort, TagMatch, TagSummary, VoteMapResponse,
+    VoteResponse,
+};
 pub use transport::Transport;
 
 /// Re-export of underlying API types directly from `actos-types`.
