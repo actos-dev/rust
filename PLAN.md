@@ -424,10 +424,10 @@ examples/
 
 ## Faz 8 — tags, search, feed
 
-- [ ] `tags().list/search/posts`, `search().query/stream`, `feed().list/following`
-- [ ] `sort` değerleri enum olarak tiplenir (`Sort::{Hot, New, Top}`),
+- [x] `tags().list/search/posts`, `search().query/stream`, `feed().list/following`
+- [x] `sort` değerleri enum olarak tiplenir (`Sort::{Hot, New, Top}`),
       string kabul edilmez
-- [ ] Commit
+- [x] Commit
 
 ## Faz 9 — votes ve saves
 

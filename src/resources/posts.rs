@@ -269,7 +269,7 @@ impl<'a> UpdatePostBuilder<'a> {
 }
 
 /// Synthesizes a [`Post`] from a potentially sparse JSON object returned by `?fields=...` queries.
-fn synthesize_partial_post(mut val: serde_json::Value) -> Result<Post> {
+pub(crate) fn synthesize_partial_post(mut val: serde_json::Value) -> Result<Post> {
     if let Ok(post) = serde_json::from_value::<Post>(val.clone()) {
         return Ok(post);
     }
