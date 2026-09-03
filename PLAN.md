@@ -488,13 +488,13 @@ examples/
 
 ## Faz 14 — `blocking` feature (opsiyonel cephe)
 
-- [ ] `blocking` feature'ı: `reqwest::blocking` üzerinde aynı yüzey
-- [ ] Kapsam kararı burada verilir (tam paralel mi, alt küme mi) ve
+- [x] `blocking` feature'ı: `reqwest::blocking` üzerinde aynı yüzey
+- [x] Kapsam kararı burada verilir (tam paralel mi, alt küme mi) ve
       §0 "Açık bırakılan" maddesi kapatılır
-- [ ] Async gövdenin tekrarlanmaması için makro/`maybe_async` benzeri bir
+- [x] Async gövdenin tekrarlanmaması için makro/`maybe_async` benzeri bir
       yaklaşım değerlendirilir; kod ikizlemesi kabul edilirse gerekçesi yazılır
-- [ ] `cargo test --features blocking`
-- [ ] Commit
+- [x] `cargo test --features blocking`
+- [x] Commit
 
 ## Faz 15 — Dokümantasyon
 

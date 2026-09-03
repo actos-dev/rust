@@ -26,6 +26,9 @@ pub mod pagination;
 pub mod resources;
 pub mod transport;
 
+#[cfg(feature = "blocking")]
+pub mod blocking;
+
 pub use client::{Actos, ActosBuilder};
 pub use error::{Error, RateLimit, Result};
 pub use pagination::{Page, paginate_stream, paginate_stream_with_cursor};
