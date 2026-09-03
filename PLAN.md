@@ -359,12 +359,12 @@ examples/
 
 ## Faz 1 — Hata tipi
 
-- [ ] `error.rs`: §4'teki enum + kolaylık metotları
-- [ ] `application/problem+json` gövdesini çözümleme; gövde bozuksa/boşsa
+- [x] `error.rs`: §4'teki enum + kolaylık metotları
+- [x] `application/problem+json` gövdesini çözümleme; gövde bozuksa/boşsa
       status'e göre makul bir `ErrorCode`'a düşme
-- [ ] `ErrorCode` üzerinde tam kapsamlı `match` (derleyici zorlar)
-- [ ] Birim testleri: 12 kodun her biri doğru varyanta çözümleniyor
-- [ ] Commit
+- [x] `ErrorCode` üzerinde tam kapsamlı `match` (derleyici zorlar)
+- [x] Birim testleri: 12 kodun her biri doğru varyanta çözümleniyor
+- [x] Commit
 
 ## Faz 2 — Taşıma katmanı
 
