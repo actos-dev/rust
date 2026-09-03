@@ -1,0 +1,19 @@
+# Rust build artifacts
+/target
+Cargo.lock
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# IDE & editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Temporary files & logs
+/tmp/
+*.log

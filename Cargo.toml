@@ -1,0 +1,30 @@
+[package]
+name = "actos"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "Apache-2.0"
+description = "Official Rust SDK for the Actos platform"
+readme = "README.md"
+
+[dependencies]
+actos-types = { path = "../actos-backend/crates/actos-types", default-features = false }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "multipart", "stream"] }
+tokio = { version = "1.43", features = ["sync", "time", "macros", "fs", "io-util"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+futures-core = "0.3"
+futures-util = "0.3"
+uuid = { version = "1.15", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1.43", features = ["full", "test-util"] }
+wiremock = "0.6"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"

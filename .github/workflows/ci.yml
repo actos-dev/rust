@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Check, Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rust SDK
+        uses: actions/checkout@v4
+        with:
+          path: rust
+
+      - name: Checkout backend (for actos-types dependency)
+        uses: actions/checkout@v4
+        with:
+          repository: actos-dev/backend
+          path: actos-backend
+
+      - name: Install Rust toolchain (1.96)
+        uses: dtolnay/rust-toolchain@1.96
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting (cargo fmt)
+        run: cargo fmt --check
+        working-directory: rust
+
+      - name: Clippy lint check
+        run: cargo clippy -- -D warnings
+        working-directory: rust
+
+      - name: Run test suite
+        run: cargo test
+        working-directory: rust

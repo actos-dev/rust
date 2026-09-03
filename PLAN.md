@@ -346,16 +346,16 @@ examples/
 
 ## Faz 0 — Repo iskeleti
 
-- [ ] `Cargo.toml`: `actos`, edition 2024, `rust-version = "1.96"`,
+- [x] `Cargo.toml`: `actos`, edition 2024, `rust-version = "1.96"`,
       Apache-2.0, `actos-types` git bağımlılığı, `reqwest` (rustls, json),
       `tokio`, `serde`, `thiserror`, `futures-core`, `uuid`
-- [ ] `[lints]`: `unsafe_code = "forbid"`, clippy `unwrap_used`/`expect_used` = warn
-- [ ] `rust-toolchain.toml`, `rustfmt.toml`, `clippy.toml` — backend'inkilerle aynı
-- [ ] `LICENSE` (Apache-2.0), `README.md` iskeleti, `.gitignore`
-- [ ] `.github/workflows/ci.yml`: fmt + clippy `-D warnings` + test + `cargo deny`.
+- [x] `[lints]`: `unsafe_code = "forbid"`, clippy `unwrap_used`/`expect_used` = warn
+- [x] `rust-toolchain.toml`, `rustfmt.toml`, `clippy.toml` — backend'inkilerle aynı
+- [x] `LICENSE` (Apache-2.0), `README.md` iskeleti, `.gitignore`
+- [x] `.github/workflows/ci.yml`: fmt + clippy `-D warnings` + test + `cargo deny`.
       **Yayın job'u yok**
-- [ ] `cargo build` yeşil, `actos_types` gerçekten çözülüyor mu doğrulanır
-- [ ] Commit
+- [x] `cargo build` yeşil, `actos_types` gerçekten çözülüyor mu doğrulanır
+- [x] Commit
 
 ## Faz 1 — Hata tipi
 
