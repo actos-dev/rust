@@ -23,7 +23,7 @@ pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::Comments;
 pub use feed::Feed;
 pub use meta::Meta;
-pub use posts::Posts;
+pub use posts::{CreatePostBuilder, GetPostBuilder, Posts, UpdatePostBuilder};
 pub use reports::Reports;
 pub use saves::Saves;
 pub use search::Search;

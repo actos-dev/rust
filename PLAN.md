@@ -409,11 +409,11 @@ examples/
 
 ## Faz 6 — posts
 
-- [ ] `create` (builder) / `get` / `update` / `delete`
-- [ ] Otomatik `Idempotency-Key` (§2.9), `.no_idempotency_key()` ile kapatılabilir
-- [ ] `.fields([..])` desteği (`get`)
-- [ ] `delete` sonrası `get` → `err.is_gone()` testi
-- [ ] Commit
+- [x] `create` (builder) / `get` / `update` / `delete`
+- [x] Otomatik `Idempotency-Key` (§2.9), `.no_idempotency_key()` ile kapatılabilir
+- [x] `.fields([..])` desteği (`get`)
+- [x] `delete` sonrası `get` → `err.is_gone()` testi
+- [x] Commit
 
 ## Faz 7 — comments
 
