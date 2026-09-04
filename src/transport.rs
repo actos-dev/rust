@@ -26,7 +26,7 @@ pub const IDEMPOTENCY_KEY_HEADER: &str = "idempotency-key";
 pub fn normalize_base_url(url: Url) -> Result<Url> {
     let mut s = url.as_str().trim_end_matches('/').to_string();
     s.push('/');
-    Url::parse(&s).map_err(|e| Error::Config(format!("geçersiz base_url: {e}")))
+    Url::parse(&s).map_err(|e| Error::Config(format!("invalid base_url: {e}")))
 }
 
 /// Masks an API key for safe debug logging, displaying only the first 10 characters followed by `…`.
@@ -150,7 +150,7 @@ impl Transport {
         let clean_path = path.trim_start_matches('/');
         self.base_url
             .join(clean_path)
-            .map_err(|e| Error::Config(format!("URL oluşturulamadı ({path}): {e}")))
+            .map_err(|e| Error::Config(format!("could not build URL ({path}): {e}")))
     }
 
     /// Creates a new [`RequestBuilder`] for the specified HTTP method and relative path.
@@ -219,7 +219,7 @@ impl Transport {
             let req_to_send = if is_last_attempt {
                 maybe_req
                     .take()
-                    .ok_or_else(|| Error::Config("İstek gövdesi tükendi".to_string()))?
+                    .ok_or_else(|| Error::Config("request body exhausted".to_string()))?
             } else {
                 match maybe_req.as_ref().and_then(Request::try_clone) {
                     Some(cloned) => cloned,
@@ -227,7 +227,7 @@ impl Transport {
                         // Cannot clone body; consume original request and prevent retries
                         maybe_req
                             .take()
-                            .ok_or_else(|| Error::Config("İstek gövdesi tükendi".to_string()))?
+                            .ok_or_else(|| Error::Config("request body exhausted".to_string()))?
                     }
                 }
             };

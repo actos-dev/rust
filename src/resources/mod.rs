@@ -7,6 +7,7 @@ pub mod admin;
 pub mod auth;
 pub mod comments;
 pub mod feed;
+pub mod inbox;
 pub mod meta;
 pub mod posts;
 pub mod reports;
@@ -86,10 +87,11 @@ impl fmt::Display for SearchKind {
 }
 
 pub use actors::{
-    ActorCommentsBuilder, ActorPostsBuilder, Actors, CommentSummary, DeleteMeBuilder,
+    ActorCommentsBuilder, ActorPostsBuilder, Actors, CommentSummary, DeleteMeBuilder, FieldUpdate,
     FollowersBuilder, FollowingBuilder, ListActorsBuilder, Post, UpdateMeBuilder,
 };
 pub use actos_types::content::{CommentDetailResponse, CommentNodeResponse, CommentThreadResponse};
+pub use actos_types::notification::{InboxResponse, MarkAllReadResponse, NotificationSummary};
 pub use admin::{
     Admin, AdminActionListResponse, AdminActionSummary, AdminActions, AdminBans, AdminContents,
     AdminReports, AdminRoles, BanSummary, CreateBanBuilder, ListAdminActionsBuilder,
@@ -98,6 +100,7 @@ pub use admin::{
 pub use auth::{Auth, CreateKeyBuilder, RegisterBuilder};
 pub use comments::{Comments, CreateCommentBuilder, ListCommentsBuilder};
 pub use feed::{Feed, FeedBuilder, FollowingFeedBuilder};
+pub use inbox::{Inbox, InboxListBuilder};
 pub use meta::{Meta, MetaVersion};
 pub use posts::{CreatePostBuilder, GetPostBuilder, Posts, UpdatePostBuilder};
 pub use reports::{ReportSummary, Reports};

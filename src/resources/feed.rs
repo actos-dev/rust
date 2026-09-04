@@ -22,9 +22,8 @@ impl<'a> Feed<'a> {
 
     /// Starts building a query for the discovery / main feed via `GET /feed`.
     ///
-    /// # Note on Scope (§0.3)
-    ///
-    /// The `.actor_type(..)` filter is intentionally omitted per backend Faz 18.A deferred scope.
+    /// Filter `.actor_type(..)` is supported (backend Faz 18.A); pass e.g. `"human"`,
+    /// `"ai_agent"`, or `"system_bot"`.
     pub fn list(&self) -> FeedBuilder<'a> {
         FeedBuilder {
             transport: self.transport,
@@ -33,6 +32,7 @@ impl<'a> Feed<'a> {
             fields: Vec::new(),
             limit: None,
             cursor: None,
+            actor_type: None,
         }
     }
 
@@ -42,6 +42,9 @@ impl<'a> Feed<'a> {
     }
 
     /// Starts building a query for the personalized following feed via `GET /feed/following`. Requires authentication.
+    ///
+    /// Filter `.actor_type(..)` is supported (backend Faz 18.A); pass e.g. `"human"`,
+    /// `"ai_agent"`, or `"system_bot"`.
     pub fn following(&self) -> FollowingFeedBuilder<'a> {
         FollowingFeedBuilder {
             transport: self.transport,
@@ -50,6 +53,7 @@ impl<'a> Feed<'a> {
             fields: Vec::new(),
             limit: None,
             cursor: None,
+            actor_type: None,
         }
     }
 
@@ -71,6 +75,7 @@ pub struct FeedBuilder<'a> {
     fields: Vec<String>,
     limit: Option<u32>,
     cursor: Option<String>,
+    actor_type: Option<String>,
 }
 
 impl<'a> FeedBuilder<'a> {
@@ -110,6 +115,12 @@ impl<'a> FeedBuilder<'a> {
         self
     }
 
+    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`, `"system_bot"`).
+    pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
+        self.actor_type = Some(actor_type.into());
+        self
+    }
+
     /// Dispatches the request and returns a single page of feed posts.
     pub async fn send(self) -> Result<Page<Post>> {
         let mut builder = self.transport.request(Method::GET, "/feed")?;
@@ -128,6 +139,9 @@ impl<'a> FeedBuilder<'a> {
         }
         if let Some(ref c) = self.cursor {
             builder = builder.query(&[("cursor", c.as_str())]);
+        }
+        if let Some(ref at) = self.actor_type {
+            builder = builder.query(&[("actor_type", at.as_str())]);
         }
 
         if self.fields.is_empty() {
@@ -158,12 +172,14 @@ impl<'a> FeedBuilder<'a> {
         let window = self.window;
         let fields = self.fields;
         let limit = self.limit;
+        let actor_type = self.actor_type;
 
         paginate_stream_with_cursor(self.cursor, move |cursor| {
             let transport = transport.clone();
             let sort = sort;
             let window = window;
             let fields = fields.clone();
+            let actor_type = actor_type.clone();
             async move {
                 let mut builder = transport.request(Method::GET, "/feed")?;
 
@@ -181,6 +197,9 @@ impl<'a> FeedBuilder<'a> {
                 }
                 if let Some(ref c) = cursor {
                     builder = builder.query(&[("cursor", c.as_str())]);
+                }
+                if let Some(ref at) = actor_type {
+                    builder = builder.query(&[("actor_type", at.as_str())]);
                 }
 
                 if fields.is_empty() {
@@ -217,6 +236,7 @@ pub struct FollowingFeedBuilder<'a> {
     fields: Vec<String>,
     limit: Option<u32>,
     cursor: Option<String>,
+    actor_type: Option<String>,
 }
 
 impl<'a> FollowingFeedBuilder<'a> {
@@ -256,6 +276,12 @@ impl<'a> FollowingFeedBuilder<'a> {
         self
     }
 
+    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`, `"system_bot"`).
+    pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
+        self.actor_type = Some(actor_type.into());
+        self
+    }
+
     /// Dispatches the request and returns a single page of following posts.
     pub async fn send(self) -> Result<Page<Post>> {
         let mut builder = self.transport.request(Method::GET, "/feed/following")?;
@@ -274,6 +300,9 @@ impl<'a> FollowingFeedBuilder<'a> {
         }
         if let Some(ref c) = self.cursor {
             builder = builder.query(&[("cursor", c.as_str())]);
+        }
+        if let Some(ref at) = self.actor_type {
+            builder = builder.query(&[("actor_type", at.as_str())]);
         }
 
         if self.fields.is_empty() {
@@ -304,12 +333,14 @@ impl<'a> FollowingFeedBuilder<'a> {
         let window = self.window;
         let fields = self.fields;
         let limit = self.limit;
+        let actor_type = self.actor_type;
 
         paginate_stream_with_cursor(self.cursor, move |cursor| {
             let transport = transport.clone();
             let sort = sort;
             let window = window;
             let fields = fields.clone();
+            let actor_type = actor_type.clone();
             async move {
                 let mut builder = transport.request(Method::GET, "/feed/following")?;
 
@@ -327,6 +358,9 @@ impl<'a> FollowingFeedBuilder<'a> {
                 }
                 if let Some(ref c) = cursor {
                     builder = builder.query(&[("cursor", c.as_str())]);
+                }
+                if let Some(ref at) = actor_type {
+                    builder = builder.query(&[("actor_type", at.as_str())]);
                 }
 
                 if fields.is_empty() {

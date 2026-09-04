@@ -38,3 +38,10 @@ jobs:
       - name: Run test suite
         run: cargo test
         working-directory: rust
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
+      - name: Run cargo deny check
+        run: cargo deny check
+        working-directory: rust

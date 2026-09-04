@@ -228,11 +228,11 @@ async fn test_get_comment_detail_with_ancestors() {
 async fn test_get_soft_deleted_comment() {
     let server = MockServer::start().await;
 
-    // Soft-deleted comment returns 200 OK (NOT 410) with deleted: true and body: "[silindi]"
+    // Soft-deleted comment returns 200 OK (NOT 410) with deleted: true and body: "[deleted]"
     Mock::given(method("GET"))
         .and(path("/comments/c_deleted"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-            "comment": mock_comment("c_deleted", "[silindi]", true),
+            "comment": mock_comment("c_deleted", "[deleted]", true),
             "ancestors": []
         })))
         .expect(1)
@@ -244,7 +244,7 @@ async fn test_get_soft_deleted_comment() {
     let detail = client.comments().get("c_deleted").await.unwrap();
     assert_eq!(detail.comment.id, "c_deleted");
     assert!(detail.comment.deleted);
-    assert_eq!(detail.comment.body, "[silindi]");
+    assert_eq!(detail.comment.body, "[deleted]");
 }
 
 #[tokio::test]
@@ -315,4 +315,63 @@ async fn test_update_and_delete_comment() {
     assert_eq!(updated.body, "Updated comment text");
 
     client.comments().delete("c_mod").await.unwrap();
+}
+
+#[tokio::test]
+async fn test_list_comments_body_html() {
+    let server = MockServer::start().await;
+
+    // `.body_html(true)` must be projected as ?body_html=true
+    Mock::given(method("GET"))
+        .and(path("/posts/c_post1/comments"))
+        .and(query_param("body_html", "true"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "comments": [mock_comment_node("c_html1", "**bold** text", vec![])],
+            "next_cursor": null
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = Actos::builder().base_url(server.uri()).build().unwrap();
+
+    let page = client
+        .comments()
+        .list("c_post1")
+        .body_html(true)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(page.items.len(), 1);
+    assert_eq!(page.items[0].content.id, "c_html1");
+
+    // The default (no flag) must NOT send body_html, so a matcher rejecting
+    // it is exercised through the stream shortcut as well.
+    Mock::given(method("GET"))
+        .and(path("/posts/c_post1/comments"))
+        .and(query_param_missing("body_html"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "comments": [mock_comment_node("c_plain1", "plain text", vec![])],
+            "next_cursor": null
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let page_plain = client.comments().list("c_post1").send().await.unwrap();
+    assert_eq!(page_plain.items.len(), 1);
+    assert_eq!(page_plain.items[0].content.id, "c_plain1");
+}
+
+struct QueryParamMissing {
+    name: &'static str,
+}
+impl wiremock::Match for QueryParamMissing {
+    fn matches(&self, request: &wiremock::Request) -> bool {
+        !request.url.query_pairs().any(|(k, _)| k == self.name)
+    }
+}
+fn query_param_missing(name: &'static str) -> QueryParamMissing {
+    QueryParamMissing { name }
 }

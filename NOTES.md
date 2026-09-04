@@ -13,21 +13,28 @@ Bu dosya, Actos Rust SDK (`actos`) geliştirme sürecinde alınan mimari kararla
 
 ---
 
-## 2. Backend Faz 18.A Bekleyen ve Ertelenen Özellikler (§0.3)
+## 2. Backend Faz 18.A Uyumu ve DEFERRED Özellikler (§0.3)
 
-Backend `PLAN.md` Faz 18.A henüz tamamlanmadığından, canlı veya commit'li `GET /openapi.json` spesifikasyonunda (`../actos-backend/docs/openapi.json`) yer almayan hiçbir uç veya alan SDK'ya eklenmez:
+Canlı veya commit'li `GET /openapi.json` spesifikasyonu
+(`../actos-backend/docs/openapi.json`) **otoritedir**: spec'te olmayan hiçbir uç
+veya alan SDK'ya eklenmez.
 
-1. **Faz 12.B (`inbox.*` ve `verifications.*`)**:
-   - `GET /me/inbox`, `POST /me/verifications` vb. uçlar ertelenmiştir.
-   - Bu faz tamamlanana kadar SDK yüzeyine eklenmeyecek, `PLAN.md` üzerinde `[ ]` olarak bırakılacaktır.
-2. **`actors().update_me()`**:
-   - Mevcut backend `UpdateProfileRequest` yalnızca `display_name` ve `bio` alanlarını kabul eder.
-   - Taslaklarda geçen `.avatar(..)` parametresi SDK builder'ına dahil edilmemiştir.
-3. **`feed().list()`**:
-   - Mevcut backend `GET /feed` ucu `actor_type` sorgu parametresini desteklemez.
-   - Builder üzerinde `.actor_type(..)` filtresi eklenmemiştir.
+Backend Faz 18.A tamamlanıp canlı spec'e girince aşağıdakiler ikinci bir
+geçişle SDK'ya dahil edildi ve `PLAN.md`'de işaretlendi:
 
-Backend Faz 18.A tamamlandığında bu uçlar ve parametreler ikinci bir geçişle SDK'ya dahil edilecektir.
+1. **Faz 12.B `inbox.*`**: `GET /me/inbox` (list/stream), `PATCH /me/inbox/{id}/read`,
+   `POST /me/inbox/read` (read_all, opsiyonel `?cursor=`), yanıttaki `unread_count`
+   üzerinden `unread_count()` ve sabit aralıkla `watch()` — `src/resources/inbox.rs`,
+   `client.inbox()`, blocking cephe dahil, testler `tests/inbox_tests.rs`.
+2. **`actors().update_me()` tri-state**: `display_name`/`bio`/`avatar` için
+   `FieldUpdate::{Keep, Clear, Set}`; `.avatar(..)` yanında `.clear_display_name()`,
+   `.clear_bio()`, `.clear_avatar()` — temizleme gövdede açık `null` gönderir.
+3. **`feed().list()` / `feed().following()` `.actor_type(..)`** filtresi.
+4. **`comments().list()` `.body_html(true)`** projeksiyonu (`?body_html=true`).
+
+Geriye yalnızca **`verifications.*` (alan adı doğrulaması)** kalır — o da bu
+yüzden SDK'ya eklenmez: backend `NOTES.md §9.2` gereği **v1 kapsamı dışına
+DEFERRED** alınmıştır (beklemede değil, bilinçli kapsam dışı).
 
 ---
 

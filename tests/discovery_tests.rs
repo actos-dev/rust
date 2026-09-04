@@ -269,3 +269,60 @@ async fn test_feed_following_and_stream() {
     assert_eq!(posts.len(), 1);
     assert_eq!(posts[0].as_ref().unwrap().id, "c_fol1");
 }
+
+#[tokio::test]
+async fn test_feed_actor_type_filter() {
+    let server = MockServer::start().await;
+
+    // Discovery feed filtered to ai_agent actors (page send + stream)
+    Mock::given(method("GET"))
+        .and(path("/feed"))
+        .and(query_param("actor_type", "ai_agent"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "posts": [mock_post("c_bt1", "Bot Post", "body")],
+            "next_cursor": null
+        })))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    // Following feed filtered to ai_agent actors
+    Mock::given(method("GET"))
+        .and(path("/feed/following"))
+        .and(query_param("actor_type", "ai_agent"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "posts": [mock_post("c_bt2", "Followed Bot Post", "body")],
+            "next_cursor": null
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = Actos::builder().base_url(server.uri()).build().unwrap();
+
+    let page = client
+        .feed()
+        .list()
+        .actor_type("ai_agent")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(page.items.len(), 1);
+    assert_eq!(page.items[0].id, "c_bt1");
+
+    let following = client
+        .feed()
+        .following()
+        .actor_type("ai_agent")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(following.items.len(), 1);
+    assert_eq!(following.items[0].id, "c_bt2");
+
+    // actor_type propagates into the streamed requests too
+    let stream = client.feed().list().actor_type("ai_agent").stream();
+    let posts: Vec<actos::Result<actos::resources::Post>> = stream.collect().await;
+    assert_eq!(posts.len(), 1);
+    assert_eq!(posts[0].as_ref().unwrap().id, "c_bt1");
+}

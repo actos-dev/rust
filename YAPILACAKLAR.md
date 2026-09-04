@@ -1,5 +1,11 @@
 # Yapılacaklar — Rust SDK
 
+> **GÜNCELLEME (2026-09-05):** publish dışı tüm 18.A eksikleri tamamlandı — inbox.*,
+> feed actor_type, tri-state `FieldUpdate` update_me (avatar/clear), comments body_html,
+> `[silindi]`→`[deleted]`, İngilizce hata mesajları, CI `cargo deny`. Kapılar yeşil
+> (cargo test --all-features, clippy -D warnings, fmt). Kalan yalnızca paketleme/yayın
+> (`actos-types` path→git bağımlılığı).
+
 > Durum özeti: Faz 0–16 kodu derleniyor, `cargo test --all-features` (95 test +
 > 7 doctest) yeşil, `cargo clippy -D warnings` ve `cargo deny check` temiz.
 > Ancak backend Faz 18.A'nın 2026-09-03'te bitmesiyle SDK'nın yüzeyi geride

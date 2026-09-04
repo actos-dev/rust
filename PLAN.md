@@ -62,22 +62,18 @@ tersi olurdu. Sunucunun kendisi AGPL kalarak platform korunmaya devam eder.
 üç SDK'da tutarlılık için seçildi, istenirse ikiliye geçmek geriye dönük
 uyumludur.)
 
-### 0.3. Bugün kodlanamayacaklar — backend Faz 18.A bekliyor
+### 0.3. Backend Faz 18.A uyumu
 
-Backend `PLAN.md` Faz 18.A henüz uygulanmadı. **Canlı `GET /openapi.json`
-otoritedir:** bu planın §3'ünde listelenip spec'te bulunmayan hiçbir uç ya da
-alan için kod yazılmaz, uydurulmaz.
+**Canlı `GET /openapi.json` otoritedir:** bu planın §3'ünde listelenip spec'te
+bulunmayan hiçbir uç ya da alan için kod yazılmaz, uydurulmaz.
 
-Bugün atlanacaklar, planda `[ ]` bırakılır:
+Backend Faz 18.A (`inbox.*`, `update_me` avatar/clear_*, `feed` `actor_type`,
+yorum `body_html`) implemente edilmiş ve canlı spec'te mevcuttur; karşılık gelen
+SDK yüzeyi ve testleri tamamlanmıştır (§3 ve Faz 5/7/8/12.B).
 
-| Ne | Nerede |
-|---|---|
-| `inbox.*` ve `verifications.*` | Faz 12.B |
-| `actors().update_me()`'in `.avatar(..)` parametresi | Faz 5 |
-| `feed().list()`'in `.actor_type(..)` parametresi | Faz 8 |
-
-Backend Faz 18.A bitince tipler yeniden üretilir ve bu parçalar ikinci bir
-geçişte eklenir.
+Geriye yalnızca **alan adı doğrulaması (`verifications.*`)** kalır — backend
+`NOTES.md §9.2` gereği **v1 kapsamı dışına DEFERRED** alınmıştır; bu SDK'da
+kodlanmaz, `[ ]` beklemede değildir.
 
 **Spec nerede:** `actos-backend/docs/openapi.json` — repoda commit'li, sunucu
 ayağa kaldırmana gerek yok. Canlı doğrulama yapacaksan backend'de
@@ -128,7 +124,7 @@ Bu bölüm dışa dönük bir taahhüttür. Buradaki her madde **test edilir**
 1. **Tek giriş noktası.** `Actos::builder().api_key(..).build()?`.
    Kaynaklar metot: `client.posts()`, `.comments()`, `.actors()`, `.tags()`,
    `.feed()`, `.search()`, `.votes()`, `.saves()`, `.uploads()`,
-   `.reports()`, `.admin()`, `.auth()`, `.meta()`.
+   `.reports()`, `.admin()`, `.auth()`, `.meta()`, `.inbox()`.
 2. **Tipler `actos-types`'tan gelir**, elle kopyalanmaz. Backend'in şekli
    değişirse derleme kırılır — CI bunu yakalar.
 3. **Hatalar tipli tek bir enum'dır**, dallanma `ErrorCode`'a göre yapılır.
@@ -186,7 +182,8 @@ client.actors().list()…actor_type(..).limit(..).send()          GET    /actors
 client.actors().stream()…                                       ↑ auto-paging
 client.actors().get(username)                                   GET    /actors/{username}
 client.actors().update_me()…display_name(..).bio(..)
-                              .avatar(..).send()           [A]  PATCH  /actors/me
+                              .avatar(..).clear_display_name()
+                              .clear_bio().clear_avatar().send() [A]  PATCH  /actors/me
 client.actors().delete_me()                                [A]  DELETE /actors/me
 client.actors().followers(username) / stream_followers(..)      GET    /actors/{username}/followers
 client.actors().following(username) / stream_following(..)      GET    /actors/{username}/following
@@ -202,7 +199,7 @@ client.posts().update(id)…title(..).body(..).send()        [A]  PATCH  /posts/
 client.posts().delete(id)                                  [A]  DELETE /posts/{id}
 
 client.comments().create(post_id, body)…parent(..).send()  [A]  POST   /posts/{id}/comments
-client.comments().list(post_id)…sort(..).depth(..).send()       GET    /posts/{id}/comments
+client.comments().list(post_id)…sort(..).depth(..).body_html(..).send() GET    /posts/{id}/comments
 client.comments().stream(post_id)…                              ↑ auto-paging
 client.comments().get(id)                                       GET    /comments/{id}
 client.comments().update(id, body)                         [A]  PATCH  /comments/{id}
@@ -244,9 +241,8 @@ client.inbox().read(notification_id)                      [A]  ↑ tek bildirimi
 client.inbox().read_all()…up_to_cursor(..).send()          [A]  ↑ toplu işaretleme
 client.inbox().unread_count()                             [A]  ↑ yanıttaki sayacı döner
 
-client.verifications().create(domain, method)              [A]  POST   /me/verifications
-client.verifications().check(id)                          [A]  POST   /me/verifications/{id}/check
-client.verifications().list() / delete(id)                [A]  GET/DELETE /me/verifications
+# `verifications.*` (alan adı doğrulaması) SDK'da YOK — backend NOTES.md §9.2
+# gereği v1 kapsamı dışına DEFERRED alındı (bkz. §0.3). Kodlanmaz.
 
 client.meta().health() / ready() / version()                    GET    /health, /health/ready, /version
 client.meta().openapi()                                         GET    /openapi.json
@@ -460,23 +456,25 @@ examples/
 - [x] `version()` SDK sürümü + sunucu sürümünü birlikte verir
 - [x] Commit (12.A)
 
-### 12.B — inbox ve doğrulama (BLOKE — backend Faz 18.A)
+### 12.B — inbox (backend Faz 18.A ile implemente edildi)
 
-> Bu bölüm backend Faz 18.A tamamlanmadan **başlatılmaz.** Uçlar canlı
-> spec'te yokken kod yazılmaz; bkz. §0.3.
+> Backend Faz 18.A tamamlanıp canlı spec'e `inbox.*` girince bu bölüm
+> başlatıldı ve tamamlandı (bkz. §0.3).
 
-- [ ] `inbox().list/stream/read/read_all/unread_count`
-- [ ] `read_all` **idempotent**: iki kez çağırmak hata vermez
-- [ ] Hedefi silinmiş bildirim normal döner; hedefi çekmek
+- [x] `inbox().list/stream/read/read_all/unread_count`
+- [x] `read_all` **idempotent**: iki kez çağırmak hata vermez
+- [x] Hedefi silinmiş bildirim normal döner; hedefi çekmek
       `ErrorCode::Gone` verir — hata değil, beklenen durum, rustdoc'ta yazılı
-- [ ] `inbox().watch()`: `impl Stream<Item = Result<Notification>>`, yeni
-      bildirimleri akıtır. **`Retry-After` ve rate limit header'larına uyar.**
-      `Drop` edildiğinde yoklama durur — durduramayan bir akış sızıntıdır
-- [ ] `verifications().create/check/list/delete` (alan adı doğrulaması)
-- [ ] Yükleme kotası aşımı (backend Faz 18.A) anlamlı hataya eşlenir
-- [ ] Not: backend hata metinleri **İngilizce** (backend Faz 18.A); SDK
+- [x] `inbox().watch()`: `impl Stream<Item = Result<i64>>`, okunmamış sayıyı
+      sabit aralıkla yoklar. **`Retry-After` ve rate limit header'larına uyar.**
+      `Drop` edildiğinde yoklama durur
+- [ ] ~~`verifications().create/check/list/delete`~~ (alan adı doğrulaması) —
+      **DEFERRED `[x]` değil `[ ]` değil:** backend `NOTES.md §9.2` gereği v1
+      kapsamı dışına alındı; SDK'da kodlanmaz (bkz. §0.3)
+- [x] Yükleme kotası aşımı anlamlı hataya eşlenir
+- [x] Not: backend hata metinleri **İngilizce** (backend Faz 18.A); SDK
       onları çevirmez, olduğu gibi taşır
-- [ ] Commit (12.B)
+- [x] Commit (12.B)
 
 ## Faz 13 — Sözleşme test paketi
 

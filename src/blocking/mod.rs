@@ -27,6 +27,7 @@ use crate::resources::admin::{
 use crate::resources::auth::{CreateKeyBuilder, RegisterBuilder};
 use crate::resources::comments::{CreateCommentBuilder, ListCommentsBuilder};
 use crate::resources::feed::{FeedBuilder, FollowingFeedBuilder};
+use crate::resources::inbox::InboxListBuilder;
 use crate::resources::meta::MetaVersion;
 use crate::resources::posts::{CreatePostBuilder, GetPostBuilder, Post, UpdatePostBuilder};
 use crate::resources::saves::ListSavesBuilder;
@@ -43,6 +44,7 @@ use actos_types::auth::{
     RegenerateRecoveryCodesResponse, RegisterResponse, WhoamiResponse,
 };
 use actos_types::content::{CommentDetailResponse, CommentNodeResponse, ContentSummary};
+use actos_types::notification::{MarkAllReadResponse, NotificationSummary};
 
 struct BlockingRuntime(Option<Runtime>);
 
@@ -177,6 +179,13 @@ impl Actos {
     /// Access timeline and chronological feed endpoints.
     pub fn feed(&self) -> BlockingFeed {
         BlockingFeed {
+            client: self.clone(),
+        }
+    }
+
+    /// Access the authenticated actor's notification inbox.
+    pub fn inbox(&self) -> BlockingInbox {
+        BlockingInbox {
             client: self.clone(),
         }
     }
@@ -654,6 +663,12 @@ impl<'a> BlockingListCommentsBuilder<'a> {
         self
     }
 
+    /// Requests rendered HTML for each comment body.
+    pub fn body_html(mut self, body_html: bool) -> Self {
+        self.inner = self.inner.body_html(body_html);
+        self
+    }
+
     /// Dispatches the request and returns a single page of comments.
     pub fn send(self) -> Result<Page<CommentNodeResponse>> {
         self.client.block_on(self.inner.send())
@@ -793,6 +808,30 @@ impl<'a> BlockingUpdateMeBuilder<'a> {
     /// Updates the biography text.
     pub fn bio(mut self, bio: impl Into<String>) -> Self {
         self.inner = self.inner.bio(bio);
+        self
+    }
+
+    /// Clears the display name.
+    pub fn clear_display_name(mut self) -> Self {
+        self.inner = self.inner.clear_display_name();
+        self
+    }
+
+    /// Clears the biography text.
+    pub fn clear_bio(mut self) -> Self {
+        self.inner = self.inner.clear_bio();
+        self
+    }
+
+    /// Sets a new avatar by upload or attachment ID.
+    pub fn avatar(mut self, avatar: impl Into<String>) -> Self {
+        self.inner = self.inner.avatar(avatar);
+        self
+    }
+
+    /// Clears the avatar.
+    pub fn clear_avatar(mut self) -> Self {
+        self.inner = self.inner.clear_avatar();
         self
     }
 
@@ -1091,6 +1130,12 @@ impl<'a> BlockingFeedBuilder<'a> {
         self
     }
 
+    /// Filters feed posts to actors of a given type.
+    pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
+        self.inner = self.inner.actor_type(actor_type);
+        self
+    }
+
     /// Dispatches the request and returns a single page of feed posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
@@ -1154,6 +1199,12 @@ impl<'a> BlockingFollowingFeedBuilder<'a> {
         self
     }
 
+    /// Filters following posts to actors of a given type.
+    pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
+        self.inner = self.inner.actor_type(actor_type);
+        self
+    }
+
     /// Dispatches the request and returns a single page of following posts.
     pub fn send(self) -> Result<Page<Post>> {
         self.client.block_on(self.inner.send())
@@ -1161,6 +1212,85 @@ impl<'a> BlockingFollowingFeedBuilder<'a> {
 
     /// Collects following posts across all pages synchronously.
     pub fn collect(self) -> Result<Vec<Post>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
+    }
+}
+
+/// Synchronous notification inbox client.
+pub struct BlockingInbox {
+    client: Actos,
+}
+
+impl BlockingInbox {
+    /// Starts building a query to list inbox notifications synchronously.
+    pub fn list<'a>(&'a self) -> BlockingInboxListBuilder<'a> {
+        let inner = self.client.inner.inbox().list();
+        BlockingInboxListBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Marks a single notification as read synchronously.
+    pub fn read(&self, notification_id: impl Into<String>) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.inbox().read(notification_id))
+    }
+
+    /// Bulk-marks notifications as read synchronously.
+    pub fn read_all(&self, up_to_cursor: Option<&str>) -> Result<MarkAllReadResponse> {
+        self.client
+            .block_on(self.client.inner.inbox().read_all(up_to_cursor))
+    }
+
+    /// Returns the caller's total unread notification count synchronously.
+    pub fn unread_count(&self) -> Result<i64> {
+        self.client
+            .block_on(self.client.inner.inbox().unread_count())
+    }
+}
+
+/// Builder for querying inbox notifications synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingInboxListBuilder<'a> {
+    client: &'a Actos,
+    inner: InboxListBuilder<'a>,
+}
+
+impl<'a> BlockingInboxListBuilder<'a> {
+    /// Filters the page to unread notifications only.
+    pub fn unread(mut self, unread: bool) -> Self {
+        self.inner = self.inner.unread(unread);
+        self
+    }
+
+    /// Limits notifications per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
+        self
+    }
+
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
+        self
+    }
+
+    /// Dispatches the request and returns a single page of notifications.
+    pub fn send(self) -> Result<Page<NotificationSummary>> {
+        self.client.block_on(self.inner.send())
+    }
+
+    /// Collects inbox notifications across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<NotificationSummary>> {
         let stream = self.inner.stream();
         self.client.block_on(async move {
             let mut results = Vec::new();

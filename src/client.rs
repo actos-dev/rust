@@ -107,7 +107,7 @@ impl ActosBuilder {
             .unwrap_or_else(|| DEFAULT_BASE_URL.to_string());
 
         let base_url = Url::parse(&raw_base_url)
-            .map_err(|e| Error::Config(format!("geçersiz base_url '{raw_base_url}': {e}")))?;
+            .map_err(|e| Error::Config(format!("invalid base_url '{raw_base_url}': {e}")))?;
 
         let api_key = self.api_key.or_else(|| {
             std::env::var("ACTOS_API_KEY")
@@ -255,6 +255,12 @@ impl Actos {
         Feed::new(&self.transport)
     }
 
+    /// Accessor for the authenticated actor's notification inbox.
+    #[must_use]
+    pub fn inbox(&self) -> Inbox<'_> {
+        Inbox::new(&self.transport)
+    }
+
     /// Accessor for content voting.
     #[must_use]
     pub fn votes(&self) -> Votes<'_> {
@@ -373,6 +379,7 @@ mod tests {
         let _votes = client.votes();
         let _saves = client.saves();
         let _uploads = client.uploads();
+        let _inbox = client.inbox();
         let _reports = client.reports();
         let _admin = client.admin();
         let _meta = client.meta();

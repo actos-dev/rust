@@ -110,19 +110,19 @@ pub enum Error {
     },
 
     /// Network or transport failure (no HTTP response received).
-    #[error("taşıma hatası: {0}")]
+    #[error("transport error: {0}")]
     Transport(#[from] reqwest::Error),
 
     /// Server response could not be decoded into expected shape.
-    #[error("yanıt çözümlenemedi: {0}")]
+    #[error("could not decode response: {0}")]
     Decode(String),
 
     /// Invalid client configuration (e.g. malformed base URL).
-    #[error("yapılandırma hatası: {0}")]
+    #[error("configuration error: {0}")]
     Config(String),
 
     /// File I/O error during upload operations (§4).
-    #[error("dosya okuma hatası: {0}")]
+    #[error("file I/O error: {0}")]
     Io(#[from] std::io::Error),
 }
 
@@ -548,10 +548,13 @@ mod tests {
         let config_err = Error::Config("invalid base URL".to_string());
         assert_eq!(
             config_err.to_string(),
-            "yapılandırma hatası: invalid base URL"
+            "configuration error: invalid base URL"
         );
 
         let decode_err = Error::Decode("JSON error".to_string());
-        assert_eq!(decode_err.to_string(), "yanıt çözümlenemedi: JSON error");
+        assert_eq!(
+            decode_err.to_string(),
+            "could not decode response: JSON error"
+        );
     }
 }

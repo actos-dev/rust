@@ -57,6 +57,7 @@ impl<'a> Comments<'a> {
             parent: None,
             limit: None,
             cursor: None,
+            body_html: false,
         }
     }
 
@@ -73,7 +74,7 @@ impl<'a> Comments<'a> {
     /// # Soft-Deleted Comments
     ///
     /// When a comment is soft-deleted, this endpoint still returns `200 OK` with `comment.deleted = true`
-    /// and `comment.body = "[silindi]"` (instead of an HTTP 410 Gone error) so that existing nested
+    /// and `comment.body = "[deleted]"` (instead of an HTTP 410 Gone error) so that existing nested
     /// replies remain intact and navigable in the thread tree.
     ///
     /// # Errors
@@ -191,6 +192,7 @@ pub struct ListCommentsBuilder<'a> {
     parent: Option<String>,
     limit: Option<u32>,
     cursor: Option<String>,
+    body_html: bool,
 }
 
 impl<'a> ListCommentsBuilder<'a> {
@@ -224,6 +226,15 @@ impl<'a> ListCommentsBuilder<'a> {
         self
     }
 
+    /// Requests rendered HTML for each comment body via `?body_html=true`.
+    ///
+    /// Defaults to `false` (plain text bodies). The tree endpoint intentionally does **not**
+    /// accept `?fields=`, so this standalone boolean flag controls HTML projection.
+    pub fn body_html(mut self, body_html: bool) -> Self {
+        self.body_html = body_html;
+        self
+    }
+
     /// Dispatches the request and returns a single page of [`CommentNodeResponse`] tree nodes.
     pub async fn send(self) -> Result<Page<CommentNodeResponse>> {
         let path = format!("/posts/{}/comments", self.post_id);
@@ -244,6 +255,9 @@ impl<'a> ListCommentsBuilder<'a> {
         if let Some(ref c) = self.cursor {
             builder = builder.query(&[("cursor", c.as_str())]);
         }
+        if self.body_html {
+            builder = builder.query(&[("body_html", "true")]);
+        }
 
         let res: CommentThreadResponse = self.transport.execute_json(builder).await?;
         Ok(Page::new(res.comments, res.next_cursor))
@@ -259,12 +273,14 @@ impl<'a> ListCommentsBuilder<'a> {
         let depth = self.depth;
         let parent = self.parent;
         let limit = self.limit;
+        let body_html = self.body_html;
 
         paginate_stream_with_cursor(self.cursor, move |cursor| {
             let transport = transport.clone();
             let path = format!("/posts/{post_id}/comments");
             let sort = sort.clone();
             let parent = parent.clone();
+            let body_html = body_html;
             async move {
                 let mut builder = transport.request(Method::GET, &path)?;
                 if let Some(ref s) = sort {
@@ -281,6 +297,9 @@ impl<'a> ListCommentsBuilder<'a> {
                 }
                 if let Some(ref c) = cursor {
                     builder = builder.query(&[("cursor", c.as_str())]);
+                }
+                if body_html {
+                    builder = builder.query(&[("body_html", "true")]);
                 }
 
                 let res: CommentThreadResponse = transport.execute_json(builder).await?;

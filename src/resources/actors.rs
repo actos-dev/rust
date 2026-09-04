@@ -17,6 +17,21 @@ pub type Post = ContentSummary;
 /// Type alias for a comment content summary.
 pub type CommentSummary = ContentSummary;
 
+/// Describes how to apply a single optional profile field in an [`UpdateMeBuilder`] request.
+///
+/// This is a true three-state control that mirrors the backend's `Option<Option<T>>`
+/// (`double_option`) PATCH semantics: it distinguishes "leave unchanged" from an explicit
+/// `null` clear, so profile fields can be removed as well as set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FieldUpdate<T> {
+    /// Leave the field unchanged; the key is omitted from the request body.
+    Keep,
+    /// Explicitly clear the field by sending `null`.
+    Clear,
+    /// Set the field to a new value.
+    Set(T),
+}
+
 /// Client for `/actors/*` API endpoints.
 #[derive(Debug, Clone, Copy)]
 pub struct Actors<'a> {
@@ -58,14 +73,15 @@ impl<'a> Actors<'a> {
 
     /// Starts building a profile update request for the authenticated actor via `PATCH /actors/me`.
     ///
-    /// # Note on Scope (§0.3)
-    ///
-    /// Per backend Faz 18.A deferred scope, the `.avatar(..)` parameter is not supported at this time.
+    /// Supports setting **or clearing** `display_name`, `bio`, and `avatar` (backend Faz 18.A):
+    /// each of the corresponding builder methods sets a new value, while the `clear_*` variants
+    /// explicitly remove the field by sending `null`.
     pub fn update_me(&self) -> UpdateMeBuilder<'a> {
         UpdateMeBuilder {
             transport: self.transport,
-            display_name: None,
-            bio: None,
+            display_name: FieldUpdate::Keep,
+            bio: FieldUpdate::Keep,
+            avatar: FieldUpdate::Keep,
         }
     }
 
@@ -267,32 +283,78 @@ impl<'a> ListActorsBuilder<'a> {
 #[must_use = "builders do nothing until .send().await is called"]
 pub struct UpdateMeBuilder<'a> {
     transport: &'a Transport,
-    display_name: Option<String>,
-    bio: Option<String>,
+    display_name: FieldUpdate<String>,
+    bio: FieldUpdate<String>,
+    avatar: FieldUpdate<String>,
 }
 
 impl<'a> UpdateMeBuilder<'a> {
     /// Sets a new display name.
     pub fn display_name(mut self, display_name: impl Into<String>) -> Self {
-        self.display_name = Some(display_name.into());
+        self.display_name = FieldUpdate::Set(display_name.into());
+        self
+    }
+
+    /// Clears the display name by sending `null`.
+    pub fn clear_display_name(mut self) -> Self {
+        self.display_name = FieldUpdate::Clear;
         self
     }
 
     /// Sets a new biography description.
     pub fn bio(mut self, bio: impl Into<String>) -> Self {
-        self.bio = Some(bio.into());
+        self.bio = FieldUpdate::Set(bio.into());
+        self
+    }
+
+    /// Clears the biography by sending `null`.
+    pub fn clear_bio(mut self) -> Self {
+        self.bio = FieldUpdate::Clear;
+        self
+    }
+
+    /// Sets a new avatar by upload or attachment ID.
+    pub fn avatar(mut self, avatar: impl Into<String>) -> Self {
+        self.avatar = FieldUpdate::Set(avatar.into());
+        self
+    }
+
+    /// Clears the avatar by sending `null`.
+    pub fn clear_avatar(mut self) -> Self {
+        self.avatar = FieldUpdate::Clear;
         self
     }
 
     /// Submits the profile updates and returns the updated actor summary.
     pub async fn send(self) -> Result<ActorSummary> {
         let mut body = serde_json::Map::new();
-        if let Some(d) = self.display_name {
-            body.insert("display_name".to_string(), serde_json::Value::String(d));
-        }
-        if let Some(b) = self.bio {
-            body.insert("bio".to_string(), serde_json::Value::String(b));
-        }
+        match self.display_name {
+            FieldUpdate::Keep => {}
+            FieldUpdate::Clear => {
+                body.insert("display_name".to_string(), serde_json::Value::Null);
+            }
+            FieldUpdate::Set(value) => {
+                body.insert("display_name".to_string(), serde_json::Value::String(value));
+            }
+        };
+        match self.bio {
+            FieldUpdate::Keep => {}
+            FieldUpdate::Clear => {
+                body.insert("bio".to_string(), serde_json::Value::Null);
+            }
+            FieldUpdate::Set(value) => {
+                body.insert("bio".to_string(), serde_json::Value::String(value));
+            }
+        };
+        match self.avatar {
+            FieldUpdate::Keep => {}
+            FieldUpdate::Clear => {
+                body.insert("avatar".to_string(), serde_json::Value::Null);
+            }
+            FieldUpdate::Set(value) => {
+                body.insert("avatar".to_string(), serde_json::Value::String(value));
+            }
+        };
 
         let builder = self
             .transport
