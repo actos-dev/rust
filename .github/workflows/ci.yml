@@ -16,12 +16,6 @@ jobs:
         with:
           path: rust
 
-      - name: Checkout backend (for actos-types dependency)
-        uses: actions/checkout@v4
-        with:
-          repository: actos-dev/backend
-          path: actos-backend
-
       - name: Install Rust toolchain (1.96)
         uses: dtolnay/rust-toolchain@1.96
         with:
