@@ -1,8 +1,7 @@
 # Yayın (publish) — Rust SDK
 
-> Durum: **yayınlanmadı, iki engel var.** Kod tarafı hazır (`cargo test
-> --all-features` yeşil, `clippy -D warnings` ve `cargo deny check` temiz).
-> Kalan iş paketleme.
+> Durum: **yayınlandı ✅ v0.1.0 crates.io'da** (2026-09-05).
+> `cargo add actos` çalışıyor; `Actos::builder().build()` ile doğrulandı.
 >
 > Son güncelleme: 2026-09-05.
 
@@ -57,22 +56,35 @@ gerekiyor. Backend'in `YAPILACAKLAR.md`'sinde de kayıtlı.
 
 ## Karar bekleyen — crates.io ad çakışması
 
-`rust/Cargo.toml` ve `cli/Cargo.toml` **ikisi de** `name = "actos"` diyor.
+`rust/Cargo.toml` ve `cli/Cargo.toml` **ikisi de** `name = "actos"` diyordu.
 crates.io'da bu adın tek sahibi olur.
 
 Alışıldık çözüm: kütüphane `actos` adını alır, CLI `actos-cli` olarak
 yayınlanır ama `[[bin]] name = "actos"` sayesinde yine `actos` komutu
 olarak kurulur. Karar verilmedi.
 
-## Yayın iş akışı henüz yazılmadı
+> ✅ **ÇÖZÜLDÜ (2026-09-05):** `actos` kütüphaneye gitti (bu repo). CLI
+> `actos-cli` olarak yayınlanacak; `cli/Cargo.toml` zaten `[[bin]] name =
+> "actos"` içerdiğinden kullanıcı yine `actos` komutunu alacak.
 
-`.github/workflows/` altında yalnızca `ci.yml` var. Yukarıdaki üç madde
-çözülünce tag tetikleyicili bir publish adımı eklenecek.
+## Yayın iş akışı
+
+`.github/workflows/publish.yml` eklendi — `workflow_dispatch` (elle)
+tetiklemeli, `dry_run` input'lu. `cargo publish --dry-run` + koşullu
+gerçek yayın; token `CARGO_REGISTRY_TOKEN` repo secret'ından okunur.
+
+> ✅ İlk sürüm (v0.1.0) bu workflow ile yayınlandı. Not: publish işinde
+> `rust-cache` kullanılmıyor — tek seferlik tam derlemede cache istemek
+> `Post Run` ENOENT (`tests/trybuild`/`tests/target`) log kirletiyordu,
+> kaldırıldı.
 
 ## Sıradaki adım
 
-1. `actos-types`'ı Apache-2.0'a çevir (backend repo'su).
-2. `actos-types`'ı crates.io'ya yayınla.
-3. Buradaki path bağımlılığını sürüm bağımlılığına çevir.
-4. Ad çakışmasını çöz (`actos` kime gidiyor).
-5. Publish workflow'u + `v0.1.0` tag'i.
+1. ~~`actos-types`'ı Apache-2.0'a çevir (backend repo'su).~~ ✅
+2. ~~`actos-types`'ı crates.io'ya yayınla.~~ ✅
+3. ~~Path bağımlılığını sürüm bağımlılığına çevir.~~ ✅ (`version = "0.1"`)
+4. ~~Ad çakışmasını çöz (`actos` kime gidiyor).~~ ✅ (kütüphaneye)
+5. ~~Publish workflow'u + `v0.1.0` tag'i.~~ ✅ (workflow ile yayınlandı)
+
+Bu repo için yayın bitti. Fikir (CLI'nın bu SDK'ya geçmesi) `cli/PUBLISH.md`'de
+saklı; CLI adımında ele alınacak.
