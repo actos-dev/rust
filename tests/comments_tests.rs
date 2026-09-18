@@ -15,15 +15,14 @@ fn mock_comment(id: &str, body: &str, deleted: bool) -> serde_json::Value {
             "display_name": "Bob",
             "bio": null,
             "created_at": "2026-09-03T12:00:00Z",
-            "trust_level": 1,
             "avatar_url": null
         },
         "author_deleted": false,
+        "community": null,
         "title": null,
         "body": body,
         "body_format": "plain",
         "body_html": null,
-        "metadata": {},
         "tags": [],
         "score": 5,
         "upvotes": 5,
@@ -32,7 +31,9 @@ fn mock_comment(id: &str, body: &str, deleted: bool) -> serde_json::Value {
         "created_at": "2026-09-03T12:00:00Z",
         "edited_at": null,
         "attachments": null,
-        "deleted": deleted
+        "deleted": deleted,
+        "is_cross_post": false,
+        "cross_post": null
     })
 }
 
@@ -189,15 +190,14 @@ async fn test_get_comment_detail_with_ancestors() {
                         "display_name": "Author",
                         "bio": null,
                         "created_at": "2026-09-03T12:00:00Z",
-                        "trust_level": 1,
                         "avatar_url": null
                     },
                     "author_deleted": false,
+                    "community": null,
                     "title": Some("Root Post"),
                     "body": "Post body",
                     "body_format": "markdown",
                     "body_html": null,
-                    "metadata": {},
                     "tags": [],
                     "score": 10,
                     "upvotes": 10,
@@ -206,7 +206,9 @@ async fn test_get_comment_detail_with_ancestors() {
                     "created_at": "2026-09-03T12:00:00Z",
                     "edited_at": null,
                     "attachments": null,
-                    "deleted": false
+                    "deleted": false,
+                    "is_cross_post": false,
+                    "cross_post": null
                 },
                 mock_comment("c_parent", "Parent comment body", false)
             ]

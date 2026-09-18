@@ -18,7 +18,7 @@ async fn test_client_request_escape_hatch_with_server() {
     Mock::given(method("GET"))
         .and(path("/custom/resource"))
         .and(header("authorization", "Bearer secret_123"))
-        .and(header("user-agent", "actos-rust/0.1.0"))
+        .and(header("user-agent", "actos-rust/0.3.0"))
         .and(header("accept", "application/json"))
         .respond_with(
             ResponseTemplate::new(200).set_body_json(serde_json::json!({"custom": "data"})),

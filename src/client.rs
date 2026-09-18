@@ -273,10 +273,10 @@ impl Actos {
         Saves::new(&self.transport)
     }
 
-    /// Accessor for media and file uploads.
+    /// Accessor for communities, membership, invitations, and applications.
     #[must_use]
-    pub fn uploads(&self) -> Uploads<'_> {
-        Uploads::new(&self.transport)
+    pub fn communities(&self) -> Communities<'_> {
+        Communities::new(&self.transport)
     }
 
     /// Accessor for abuse reports.
@@ -378,7 +378,7 @@ mod tests {
         let _feed = client.feed();
         let _votes = client.votes();
         let _saves = client.saves();
-        let _uploads = client.uploads();
+        let _communities = client.communities();
         let _inbox = client.inbox();
         let _reports = client.reports();
         let _admin = client.admin();

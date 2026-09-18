@@ -361,7 +361,7 @@ mod tests {
 
         Mock::given(method("GET"))
             .and(path("/test"))
-            .and(header("user-agent", "actos-rust/0.1.0"))
+            .and(header("user-agent", "actos-rust/0.3.0"))
             .and(header("accept", "application/json"))
             .and(header("authorization", "Bearer test_secret_key_12345"))
             .respond_with(

@@ -41,9 +41,9 @@ impl<'a> Admin<'a> {
         }
     }
 
-    /// Access role management endpoints (`/admin/roles`).
-    pub fn roles(&self) -> AdminRoles<'a> {
-        AdminRoles {
+    /// Access scoped permission management endpoints (`/admin/permissions`).
+    pub fn permissions(&self) -> AdminPermissions<'a> {
+        AdminPermissions {
             transport: self.transport,
         }
     }
@@ -241,15 +241,21 @@ impl<'a> AdminBans<'a> {
             username: username.into(),
             reason: reason.into(),
             expires_at: None,
+            community: None,
+            delete_posts: false,
         }
     }
 
     /// Unbans a user via `DELETE /admin/bans/{username}`. Requires moderator auth `[M]`.
     ///
-    /// Expects 204 No Content.
-    pub async fn remove(&self, username: &str) -> Result<()> {
+    /// Pass `Some(community)` to remove a community-scoped ban, or `None` for
+    /// the platform-wide ban. Idempotent; expects 204 No Content.
+    pub async fn remove(&self, username: &str, community: Option<&str>) -> Result<()> {
         let path = format!("/admin/bans/{username}");
-        let builder = self.transport.request(Method::DELETE, &path)?;
+        let mut builder = self.transport.request(Method::DELETE, &path)?;
+        if let Some(community) = community {
+            builder = builder.query(&[("community", community)]);
+        }
         self.transport.execute(builder).await?;
         Ok(())
     }
@@ -263,6 +269,8 @@ pub struct CreateBanBuilder<'a> {
     username: String,
     reason: String,
     expires_at: Option<String>,
+    community: Option<String>,
+    delete_posts: bool,
 }
 
 impl<'a> CreateBanBuilder<'a> {
@@ -272,12 +280,29 @@ impl<'a> CreateBanBuilder<'a> {
         self
     }
 
+    /// Scopes the ban to a community by name. Omitted means a platform-wide ban.
+    pub fn community(mut self, community: impl Into<String>) -> Self {
+        self.community = Some(community.into());
+        self
+    }
+
+    /// Also queues the deletion of this actor's posts in the community.
+    ///
+    /// Only valid together with [`.community(..)`](CreateBanBuilder::community);
+    /// the server rejects it with `400` otherwise.
+    pub fn delete_posts(mut self, delete_posts: bool) -> Self {
+        self.delete_posts = delete_posts;
+        self
+    }
+
     /// Dispatches the request and returns the created [`BanSummary`].
     pub async fn send(self) -> Result<BanSummary> {
         let req_body = serde_json::json!({
             "username": self.username,
             "reason": self.reason,
             "expires_at": self.expires_at,
+            "community": self.community,
+            "delete_posts": self.delete_posts,
         });
         let builder = self
             .transport
@@ -287,24 +312,56 @@ impl<'a> CreateBanBuilder<'a> {
     }
 }
 
-/// Role management sub-client.
+/// Scoped permission management sub-client.
 #[derive(Debug, Clone, Copy)]
-pub struct AdminRoles<'a> {
+pub struct AdminPermissions<'a> {
     transport: &'a Transport,
 }
 
-impl<'a> AdminRoles<'a> {
-    /// Sets or removes an administrative role for a user via `POST /admin/roles`. Requires admin auth `[X]`.
+impl<'a> AdminPermissions<'a> {
+    /// Grants a scoped permission to an actor via `PUT /admin/permissions`. Requires admin auth `[X]`.
     ///
-    /// - `role`: `Some("admin")`, `Some("moderator")`, or `None` to revoke privileges.
-    pub async fn set(&self, username: impl Into<String>, role: Option<&str>) -> Result<()> {
+    /// `permission` is a dotted name such as `"content.delete"`. Pass
+    /// `Some(community)` to scope the grant to a community, or `None` for a
+    /// global grant. The call is idempotent.
+    pub async fn grant(
+        &self,
+        username: impl Into<String>,
+        permission: impl Into<String>,
+        community: Option<&str>,
+    ) -> Result<()> {
+        self.set(Method::PUT, username, permission, community).await
+    }
+
+    /// Revokes a scoped permission from an actor via `DELETE /admin/permissions`. Requires admin auth `[X]`.
+    ///
+    /// The `community` scope must match the grant being revoked. The call is
+    /// idempotent.
+    pub async fn revoke(
+        &self,
+        username: impl Into<String>,
+        permission: impl Into<String>,
+        community: Option<&str>,
+    ) -> Result<()> {
+        self.set(Method::DELETE, username, permission, community)
+            .await
+    }
+
+    async fn set(
+        &self,
+        method: Method,
+        username: impl Into<String>,
+        permission: impl Into<String>,
+        community: Option<&str>,
+    ) -> Result<()> {
         let req_body = serde_json::json!({
             "username": username.into(),
-            "role": role,
+            "permission": permission.into(),
+            "community": community,
         });
         let builder = self
             .transport
-            .request(Method::POST, "/admin/roles")?
+            .request(method, "/admin/permissions")?
             .json(&req_body);
         self.transport.execute(builder).await?;
         Ok(())

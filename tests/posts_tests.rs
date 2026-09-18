@@ -13,6 +13,23 @@ impl Match for HeaderMissingMatcher {
     }
 }
 
+struct MultipartPartsMatcher;
+
+impl Match for MultipartPartsMatcher {
+    fn matches(&self, request: &Request) -> bool {
+        let is_multipart = request
+            .headers
+            .get(wiremock::http::HeaderName::from_static("content-type"))
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.starts_with("multipart/form-data"));
+        let body = String::from_utf8_lossy(&request.body);
+        is_multipart
+            && body.contains("name=\"payload\"")
+            && body.contains("name=\"files\"")
+            && body.contains("image binary payload")
+    }
+}
+
 fn mock_post(id: &str, title: &str, body: &str) -> serde_json::Value {
     serde_json::json!({
         "id": id,
@@ -24,15 +41,14 @@ fn mock_post(id: &str, title: &str, body: &str) -> serde_json::Value {
             "display_name": "Alice",
             "bio": null,
             "created_at": "2026-09-03T12:00:00Z",
-            "trust_level": 1,
             "avatar_url": null
         },
         "author_deleted": false,
+        "community": null,
         "title": title,
         "body": body,
         "body_format": "markdown",
         "body_html": null,
-        "metadata": {},
         "tags": ["rust", "sdk"],
         "score": 42,
         "upvotes": 42,
@@ -41,7 +57,9 @@ fn mock_post(id: &str, title: &str, body: &str) -> serde_json::Value {
         "created_at": "2026-09-03T12:00:00Z",
         "edited_at": null,
         "attachments": null,
-        "deleted": false
+        "deleted": false,
+        "is_cross_post": false,
+        "cross_post": null
     })
 }
 
@@ -68,8 +86,7 @@ async fn test_create_post_auto_idempotency_key() {
         .and(body_json(serde_json::json!({
             "title": "Hello World",
             "body": "First post",
-            "tags": ["rust"],
-            "metadata": {}
+            "tags": ["rust"]
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(mock_post(
             "c_auto",
@@ -383,4 +400,100 @@ async fn test_delete_post_followed_by_get_gone() {
     let err = client.posts().get("c_deleted").send().await.unwrap_err();
     assert!(err.is_gone());
     assert_eq!(err.code(), Some(ErrorCode::Gone));
+}
+
+#[tokio::test]
+async fn test_create_post_with_files_multipart() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/posts"))
+        .and(MultipartPartsMatcher)
+        .respond_with(ResponseTemplate::new(200).set_body_json(mock_post(
+            "c_image",
+            "Post With Image",
+            "Body",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = Actos::builder()
+        .base_url(server.uri())
+        .api_key("tok_123")
+        .build()
+        .unwrap();
+
+    let post = client
+        .posts()
+        .create("Post With Image", "Body")
+        .attach(b"image binary payload".to_vec())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(post.id, "c_image");
+}
+
+#[tokio::test]
+async fn test_create_post_in_community_and_cross_post() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/posts"))
+        .and(body_json(serde_json::json!({
+            "title": "Community Post",
+            "body": "Body",
+            "tags": [],
+            "community": "rust"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(mock_post(
+            "c_comm",
+            "Community Post",
+            "Body",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/posts"))
+        .and(body_json(serde_json::json!({
+            "title": "Cross Post",
+            "body": "Body",
+            "tags": [],
+            "cross_post_source": "c_source"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(mock_post(
+            "c_cross",
+            "Cross Post",
+            "Body",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = Actos::builder()
+        .base_url(server.uri())
+        .api_key("tok_123")
+        .build()
+        .unwrap();
+
+    let community_post = client
+        .posts()
+        .create("Community Post", "Body")
+        .community("rust")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(community_post.id, "c_comm");
+
+    let cross_post = client
+        .posts()
+        .create("Cross Post", "Body")
+        .cross_post_source("c_source")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(cross_post.id, "c_cross");
 }

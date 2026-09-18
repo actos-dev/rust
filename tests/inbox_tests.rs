@@ -14,7 +14,6 @@ fn mock_notification(id: &str, kind: &str) -> serde_json::Value {
             "display_name": "Alice",
             "bio": null,
             "created_at": "2026-09-03T12:00:00Z",
-            "trust_level": 1,
             "avatar_url": null
         },
         "target_type": "content",

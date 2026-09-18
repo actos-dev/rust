@@ -7,6 +7,7 @@ use reqwest::Method;
 
 use crate::error::{Error, Result};
 use crate::pagination::{Page, paginate_stream_with_cursor};
+use crate::resources::{FileUpload, build_content_form};
 use crate::transport::Transport;
 
 /// Strategy for sending the `Idempotency-Key` HTTP header.
@@ -42,7 +43,7 @@ impl<'a> Comments<'a> {
             post_id: post_id.into(),
             body: body.into(),
             parent_id: None,
-            attachment_ids: Vec::new(),
+            files: Vec::new(),
             idempotency_key: IdempotencyKeyMode::Auto,
         }
     }
@@ -118,7 +119,7 @@ pub struct CreateCommentBuilder<'a> {
     post_id: String,
     body: String,
     parent_id: Option<String>,
-    attachment_ids: Vec<String>,
+    files: Vec<FileUpload>,
     idempotency_key: IdempotencyKeyMode,
 }
 
@@ -129,12 +130,19 @@ impl<'a> CreateCommentBuilder<'a> {
         self
     }
 
-    /// Adds media attachment IDs to the comment.
-    pub fn attachment_ids(
-        mut self,
-        attachment_ids: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
-        self.attachment_ids = attachment_ids.into_iter().map(Into::into).collect();
+    /// Attaches one or more image files to the comment.
+    ///
+    /// The request is sent as `multipart/form-data` (a `payload` JSON part
+    /// plus one `files` part per image); without files it is plain JSON.
+    /// Up to four images are accepted.
+    pub fn files(mut self, files: impl IntoIterator<Item = impl Into<FileUpload>>) -> Self {
+        self.files.extend(files.into_iter().map(Into::into));
+        self
+    }
+
+    /// Attaches a single image file to the comment.
+    pub fn attach(mut self, file: impl Into<FileUpload>) -> Self {
+        self.files.push(file.into());
         self
     }
 
@@ -161,11 +169,12 @@ impl<'a> CreateCommentBuilder<'a> {
             req_body["parent_id"] = serde_json::Value::String(parent);
         }
 
-        if !self.attachment_ids.is_empty() {
-            req_body["attachment_ids"] = serde_json::json!(self.attachment_ids);
-        }
-
-        let mut builder = self.transport.request(Method::POST, &path)?.json(&req_body);
+        let mut builder = if self.files.is_empty() {
+            self.transport.request(Method::POST, &path)?.json(&req_body)
+        } else {
+            let form = build_content_form(req_body, self.files)?;
+            self.transport.request(Method::POST, &path)?.multipart(form)
+        };
 
         let idempotency_header = match self.idempotency_key {
             IdempotencyKeyMode::Auto => Some(uuid::Uuid::new_v4().to_string()),

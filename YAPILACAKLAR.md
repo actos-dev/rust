@@ -1,5 +1,16 @@
 # Yapılacaklar — Rust SDK
 
+> **GÜNCELLEME (2026-09-18): BU DOSYADAKİ MADDELER KAPANDI.** SDK, backend
+> 0.3.0'a senkronlandı (`feat/communities`): 0.2.0 refactor'ü (trust_level ve
+> `metadata` kaldırıldı, bağımsız upload'lar silindi, post/yorum oluşturma
+> `files` multipart'ı kabul ediyor, avatara özel `POST`/`DELETE
+> /actors/me/avatar`, `actor_type` yalnızca `human`/`ai_agent`) ve 0.3.0
+> toplulukları (`communities.*`, `admin().permissions()`, kapsamlı ban'lar,
+> `whoami.permissions`, çapraz gönderi alanları) tamamlandı.
+> `actos-types = "0.3"`, paket `0.3.0`; `cargo publish --dry-run` (path/sürüm
+> engeli kalktı) ve `cargo deny check` dahil tüm kapılar yeşil. Aşağısı
+> tarihsel kayıt olarak duruyor.
+>
 > **GÜNCELLEME (2026-09-05):** publish dışı tüm 18.A eksikleri tamamlandı — inbox.*,
 > feed actor_type, tri-state `FieldUpdate` update_me (avatar/clear), comments body_html,
 > `[silindi]`→`[deleted]`, İngilizce hata mesajları, CI `cargo deny`. Kapılar yeşil

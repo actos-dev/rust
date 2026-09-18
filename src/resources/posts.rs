@@ -4,6 +4,7 @@ use actos_types::content::ContentSummary;
 use reqwest::Method;
 
 use crate::error::{Error, Result};
+use crate::resources::{FileUpload, build_content_form};
 use crate::transport::Transport;
 
 /// Type alias for post content summary.
@@ -46,8 +47,9 @@ impl<'a> Posts<'a> {
             title: title.into(),
             body: body.into(),
             tags: Vec::new(),
-            metadata: None,
-            attachment_ids: Vec::new(),
+            community: None,
+            cross_post_source: None,
+            files: Vec::new(),
             idempotency_key: IdempotencyKeyMode::Auto,
         }
     }
@@ -97,8 +99,9 @@ pub struct CreatePostBuilder<'a> {
     title: String,
     body: String,
     tags: Vec<String>,
-    metadata: Option<serde_json::Value>,
-    attachment_ids: Vec<String>,
+    community: Option<String>,
+    cross_post_source: Option<String>,
+    files: Vec<FileUpload>,
     idempotency_key: IdempotencyKeyMode,
 }
 
@@ -109,18 +112,39 @@ impl<'a> CreatePostBuilder<'a> {
         self
     }
 
-    /// Adds attachments (uploaded file IDs) to attach to this post.
-    pub fn attachment_ids(
-        mut self,
-        attachment_ids: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
-        self.attachment_ids = attachment_ids.into_iter().map(Into::into).collect();
+    /// Posts into the named community.
+    ///
+    /// The author must be a member of that community (public or private), or
+    /// the request fails with `403`; an unknown name fails with `404`.
+    pub fn community(mut self, community: impl Into<String>) -> Self {
+        self.community = Some(community.into());
         self
     }
 
-    /// Attaches arbitrary JSON metadata to the post.
-    pub fn metadata(mut self, metadata: serde_json::Value) -> Self {
-        self.metadata = Some(metadata);
+    /// Cross-posts the referenced content (external `c_...` id) instead of
+    /// writing a new post.
+    ///
+    /// When set, `title` and `body` are accepted but ignored: the new post is
+    /// a reference to the source, resolved at read time. A source in a
+    /// private community cannot be cross-posted.
+    pub fn cross_post_source(mut self, source: impl Into<String>) -> Self {
+        self.cross_post_source = Some(source.into());
+        self
+    }
+
+    /// Attaches one or more image files to the post.
+    ///
+    /// The request is sent as `multipart/form-data` (a `payload` JSON part
+    /// plus one `files` part per image); without files it is plain JSON.
+    /// Up to four images are accepted.
+    pub fn files(mut self, files: impl IntoIterator<Item = impl Into<FileUpload>>) -> Self {
+        self.files.extend(files.into_iter().map(Into::into));
+        self
+    }
+
+    /// Attaches a single image file to the post.
+    pub fn attach(mut self, file: impl Into<FileUpload>) -> Self {
+        self.files.push(file.into());
         self
     }
 
@@ -145,17 +169,25 @@ impl<'a> CreatePostBuilder<'a> {
             "title": self.title,
             "body": self.body,
             "tags": self.tags,
-            "metadata": self.metadata.unwrap_or_else(|| serde_json::json!({})),
         });
 
-        if !self.attachment_ids.is_empty() {
-            req_body["attachment_ids"] = serde_json::json!(self.attachment_ids);
+        if let Some(community) = self.community {
+            req_body["community"] = serde_json::Value::String(community);
+        }
+        if let Some(source) = self.cross_post_source {
+            req_body["cross_post_source"] = serde_json::Value::String(source);
         }
 
-        let mut builder = self
-            .transport
-            .request(Method::POST, "/posts")?
-            .json(&req_body);
+        let mut builder = if self.files.is_empty() {
+            self.transport
+                .request(Method::POST, "/posts")?
+                .json(&req_body)
+        } else {
+            let form = build_content_form(req_body, self.files)?;
+            self.transport
+                .request(Method::POST, "/posts")?
+                .multipart(form)
+        };
 
         let idempotency_header = match self.idempotency_key {
             IdempotencyKeyMode::Auto => Some(uuid::Uuid::new_v4().to_string()),
@@ -287,20 +319,18 @@ pub(crate) fn synthesize_partial_post(mut val: serde_json::Value) -> Result<Post
                 "display_name": null,
                 "bio": null,
                 "created_at": "",
-                "trust_level": 0,
                 "avatar_url": null
             })
         });
         map.entry("author_deleted")
             .or_insert_with(|| serde_json::Value::Bool(false));
+        map.entry("community").or_insert(serde_json::Value::Null);
         map.entry("title").or_insert(serde_json::Value::Null);
         map.entry("body")
             .or_insert_with(|| serde_json::Value::String(String::new()));
         map.entry("body_format")
             .or_insert_with(|| serde_json::Value::String("plain".to_string()));
         map.entry("body_html").or_insert(serde_json::Value::Null);
-        map.entry("metadata")
-            .or_insert_with(|| serde_json::json!({}));
         map.entry("tags").or_insert_with(|| serde_json::json!([]));
         map.entry("score").or_insert_with(|| serde_json::json!(0));
         map.entry("upvotes").or_insert_with(|| serde_json::json!(0));
@@ -314,6 +344,9 @@ pub(crate) fn synthesize_partial_post(mut val: serde_json::Value) -> Result<Post
         map.entry("attachments").or_insert(serde_json::Value::Null);
         map.entry("deleted")
             .or_insert_with(|| serde_json::Value::Bool(false));
+        map.entry("is_cross_post")
+            .or_insert_with(|| serde_json::Value::Bool(false));
+        map.entry("cross_post").or_insert(serde_json::Value::Null);
     }
 
     serde_json::from_value::<Post>(val).map_err(|e| Error::Decode(e.to_string()))

@@ -12,6 +12,7 @@ fn mock_report(id: &str, target_id: &str, status: &str) -> serde_json::Value {
         "reason": "Spam content",
         "status": status,
         "notes": null,
+        "community": null,
         "created_at": "2026-09-03T12:00:00Z",
         "resolved_at": null
     })
@@ -201,21 +202,54 @@ async fn test_admin_bans_create_and_remove() {
         .and(body_json(serde_json::json!({
             "username": "spammer",
             "reason": "Repeated spamming",
-            "expires_at": "2026-10-01T00:00:00Z"
+            "expires_at": "2026-10-01T00:00:00Z",
+            "community": null,
+            "delete_posts": false
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "username": "spammer",
             "reason": "Repeated spamming",
             "banned_at": "2026-09-03T12:00:00Z",
-            "expires_at": "2026-10-01T00:00:00Z"
+            "expires_at": "2026-10-01T00:00:00Z",
+            "community": null
         })))
         .expect(1)
         .mount(&server)
         .await;
 
-    // Remove ban
+    // Create a community-scoped ban that also deletes the actor's posts.
+    Mock::given(method("POST"))
+        .and(path("/admin/bans"))
+        .and(body_json(serde_json::json!({
+            "username": "troll",
+            "reason": "Community spam",
+            "expires_at": null,
+            "community": "rust",
+            "delete_posts": true
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "username": "troll",
+            "reason": "Community spam",
+            "banned_at": "2026-09-03T12:00:00Z",
+            "expires_at": null,
+            "community": "rust"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Remove platform-wide ban
     Mock::given(method("DELETE"))
         .and(path("/admin/bans/spammer"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Remove community-scoped ban
+    Mock::given(method("DELETE"))
+        .and(path("/admin/bans/troll"))
+        .and(query_param("community", "rust"))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
         .mount(&server)
@@ -238,32 +272,78 @@ async fn test_admin_bans_create_and_remove() {
 
     assert_eq!(ban.username, "spammer");
     assert_eq!(ban.expires_at.as_deref(), Some("2026-10-01T00:00:00Z"));
+    assert_eq!(ban.community, None);
 
-    client.admin().bans().remove("spammer").await.unwrap();
+    let scoped = client
+        .admin()
+        .bans()
+        .create("troll", "Community spam")
+        .community("rust")
+        .delete_posts(true)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(scoped.community.as_deref(), Some("rust"));
+
+    client.admin().bans().remove("spammer", None).await.unwrap();
+    client
+        .admin()
+        .bans()
+        .remove("troll", Some("rust"))
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
-async fn test_admin_roles_set() {
+async fn test_admin_permissions_grant_and_revoke() {
     let server = MockServer::start().await;
 
-    // Set moderator
-    Mock::given(method("POST"))
-        .and(path("/admin/roles"))
+    // Global grant
+    Mock::given(method("PUT"))
+        .and(path("/admin/permissions"))
         .and(body_json(serde_json::json!({
             "username": "trusted_user",
-            "role": "moderator"
+            "permission": "content.delete",
+            "community": null
         })))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
         .mount(&server)
         .await;
 
-    // Revoke role
-    Mock::given(method("POST"))
-        .and(path("/admin/roles"))
+    // Community-scoped grant
+    Mock::given(method("PUT"))
+        .and(path("/admin/permissions"))
         .and(body_json(serde_json::json!({
-            "username": "demoted_user",
-            "role": null
+            "username": "mod_user",
+            "permission": "member.ban",
+            "community": "rust"
+        })))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Global revoke
+    Mock::given(method("DELETE"))
+        .and(path("/admin/permissions"))
+        .and(body_json(serde_json::json!({
+            "username": "trusted_user",
+            "permission": "content.delete",
+            "community": null
+        })))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Community-scoped revoke
+    Mock::given(method("DELETE"))
+        .and(path("/admin/permissions"))
+        .and(body_json(serde_json::json!({
+            "username": "mod_user",
+            "permission": "member.ban",
+            "community": "rust"
         })))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
@@ -278,15 +358,29 @@ async fn test_admin_roles_set() {
 
     client
         .admin()
-        .roles()
-        .set("trusted_user", Some("moderator"))
+        .permissions()
+        .grant("trusted_user", "content.delete", None)
         .await
         .unwrap();
 
     client
         .admin()
-        .roles()
-        .set("demoted_user", None)
+        .permissions()
+        .grant("mod_user", "member.ban", Some("rust"))
+        .await
+        .unwrap();
+
+    client
+        .admin()
+        .permissions()
+        .revoke("trusted_user", "content.delete", None)
+        .await
+        .unwrap();
+
+    client
+        .admin()
+        .permissions()
+        .revoke("mod_user", "member.ban", Some("rust"))
         .await
         .unwrap();
 }

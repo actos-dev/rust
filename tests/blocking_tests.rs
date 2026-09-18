@@ -15,15 +15,14 @@ fn mock_post_json(id: &str, title: &str) -> serde_json::Value {
             "display_name": "Alice",
             "bio": null,
             "created_at": "2026-09-03T12:00:00Z",
-            "trust_level": 0,
             "avatar_url": null
         },
         "author_deleted": false,
+        "community": null,
         "title": title,
         "body": "Body text",
         "body_format": "plain",
         "body_html": null,
-        "metadata": {},
         "tags": ["sync", "blocking"],
         "score": 1,
         "upvotes": 1,
@@ -32,7 +31,9 @@ fn mock_post_json(id: &str, title: &str) -> serde_json::Value {
         "created_at": "2026-09-03T12:00:00Z",
         "edited_at": null,
         "attachments": null,
-        "deleted": false
+        "deleted": false,
+        "is_cross_post": false,
+        "cross_post": null
     })
 }
 
@@ -186,4 +187,73 @@ fn test_blocking_votes_up() {
         .expect("Blocking upvote should succeed");
     assert_eq!(vote_res.value, 1);
     assert_eq!(vote_res.score, 42);
+}
+
+#[test]
+fn test_blocking_communities_list_and_create() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let server = rt.block_on(MockServer::start());
+
+    let community = serde_json::json!({
+        "id": "m_rust",
+        "name": "rust",
+        "description": "The rust community",
+        "visibility": "public",
+        "owner": {
+            "id": "a_owner",
+            "username": "owner",
+            "actor_type": "human",
+            "display_name": null,
+            "bio": null,
+            "created_at": "2026-09-03T12:00:00Z",
+            "avatar_url": null
+        },
+        "member_count": 1,
+        "post_count": 0,
+        "is_member": true,
+        "created_at": "2026-09-03T12:00:00Z",
+        "updated_at": "2026-09-03T12:00:00Z"
+    });
+
+    rt.block_on(async {
+        Mock::given(method("GET"))
+            .and(path("/communities"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "communities": [community],
+                "next_cursor": null
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        Mock::given(method("POST"))
+            .and(path("/communities"))
+            .and(header("authorization", "Bearer tok_sync"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(community))
+            .expect(1)
+            .mount(&server)
+            .await;
+    });
+
+    let client = Actos::builder()
+        .base_url(server.uri())
+        .api_key("tok_sync")
+        .build()
+        .unwrap();
+
+    let page = client
+        .communities()
+        .list()
+        .send()
+        .expect("Blocking community list should succeed");
+    assert_eq!(page.items.len(), 1);
+    assert_eq!(page.items[0].name, "rust");
+
+    let created = client
+        .communities()
+        .create("rust", "The rust community")
+        .send()
+        .expect("Blocking community create should succeed");
+    assert_eq!(created.name, "rust");
+    assert!(created.is_member);
 }

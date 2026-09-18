@@ -26,6 +26,11 @@ use crate::resources::admin::{
 };
 use crate::resources::auth::{CreateKeyBuilder, RegisterBuilder};
 use crate::resources::comments::{CreateCommentBuilder, ListCommentsBuilder};
+use crate::resources::communities::{
+    CommunityMembersBuilder, CommunityPostsBuilder, CreateCommunityBuilder,
+    ListApplicationsBuilder, ListCommunitiesBuilder, ListInvitationsBuilder,
+    UpdateCommunityBuilder,
+};
 use crate::resources::feed::{FeedBuilder, FollowingFeedBuilder};
 use crate::resources::inbox::InboxListBuilder;
 use crate::resources::meta::MetaVersion;
@@ -33,15 +38,18 @@ use crate::resources::posts::{CreatePostBuilder, GetPostBuilder, Post, UpdatePos
 use crate::resources::saves::ListSavesBuilder;
 use crate::resources::search::SearchBuilder;
 use crate::resources::tags::{ListTagsBuilder, TagMatch, TagPostsBuilder, TagSummary};
-use crate::resources::uploads::{CreateUploadBuilder, UploadResponse, UploadSource};
 use crate::resources::{
-    DeleteMeBuilder, FeedWindow, ListActorsBuilder, SearchKind, Sort, UpdateMeBuilder, VoteResponse,
+    DeleteMeBuilder, FeedWindow, FileUpload, ListActorsBuilder, SearchKind, Sort, UpdateMeBuilder,
+    VoteResponse,
 };
 use crate::{Actos as AsyncActos, ActosBuilder as AsyncActosBuilder, RateLimit};
-use actos_types::actor::ActorProfileResponse;
+use actos_types::actor::{ActorProfileResponse, AvatarResponse};
 use actos_types::auth::{
     ActorSummary, ApiKeySummary, CreateKeyResponse, RecoverResponse,
     RegenerateRecoveryCodesResponse, RegisterResponse, WhoamiResponse,
+};
+use actos_types::community::{
+    ApplicationSummary, CommunityMemberSummary, CommunitySummary, InvitationSummary,
 };
 use actos_types::content::{CommentDetailResponse, CommentNodeResponse, ContentSummary};
 use actos_types::notification::{MarkAllReadResponse, NotificationSummary};
@@ -204,9 +212,9 @@ impl Actos {
         }
     }
 
-    /// Access file upload endpoints.
-    pub fn uploads(&self) -> BlockingUploads {
-        BlockingUploads {
+    /// Access community, membership, invitation, and application endpoints.
+    pub fn communities(&self) -> BlockingCommunities {
+        BlockingCommunities {
             client: self.clone(),
         }
     }
@@ -448,18 +456,27 @@ impl<'a> BlockingCreatePostBuilder<'a> {
         self
     }
 
-    /// Attaches file uploads to the post.
-    pub fn attachment_ids(
-        mut self,
-        attachment_ids: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
-        self.inner = self.inner.attachment_ids(attachment_ids);
+    /// Posts into the named community.
+    pub fn community(mut self, community: impl Into<String>) -> Self {
+        self.inner = self.inner.community(community);
         self
     }
 
-    /// Attaches custom JSON metadata to the post.
-    pub fn metadata(mut self, metadata: serde_json::Value) -> Self {
-        self.inner = self.inner.metadata(metadata);
+    /// Cross-posts the referenced content (external `c_...` id).
+    pub fn cross_post_source(mut self, source: impl Into<String>) -> Self {
+        self.inner = self.inner.cross_post_source(source);
+        self
+    }
+
+    /// Attaches one or more image files to the post.
+    pub fn files(mut self, files: impl IntoIterator<Item = impl Into<FileUpload>>) -> Self {
+        self.inner = self.inner.files(files);
+        self
+    }
+
+    /// Attaches a single image file to the post.
+    pub fn attach(mut self, file: impl Into<FileUpload>) -> Self {
+        self.inner = self.inner.attach(file);
         self
     }
 
@@ -598,12 +615,15 @@ impl<'a> BlockingCreateCommentBuilder<'a> {
         self
     }
 
-    /// Attaches file upload IDs to the comment.
-    pub fn attachment_ids(
-        mut self,
-        attachment_ids: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
-        self.inner = self.inner.attachment_ids(attachment_ids);
+    /// Attaches one or more image files to the comment.
+    pub fn files(mut self, files: impl IntoIterator<Item = impl Into<FileUpload>>) -> Self {
+        self.inner = self.inner.files(files);
+        self
+    }
+
+    /// Attaches a single image file to the comment.
+    pub fn attach(mut self, file: impl Into<FileUpload>) -> Self {
+        self.inner = self.inner.attach(file);
         self
     }
 
@@ -727,6 +747,18 @@ impl BlockingActors {
         }
     }
 
+    /// Uploads or replaces the caller's avatar synchronously.
+    pub fn upload_avatar(&self, file: impl Into<FileUpload>) -> Result<AvatarResponse> {
+        self.client
+            .block_on(self.client.inner.actors().upload_avatar(file))
+    }
+
+    /// Deletes the caller's avatar synchronously.
+    pub fn delete_avatar(&self) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.actors().delete_avatar())
+    }
+
     /// Follows a user synchronously.
     pub fn follow(&self, username: &str) -> Result<()> {
         self.client
@@ -820,18 +852,6 @@ impl<'a> BlockingUpdateMeBuilder<'a> {
     /// Clears the biography text.
     pub fn clear_bio(mut self) -> Self {
         self.inner = self.inner.clear_bio();
-        self
-    }
-
-    /// Sets a new avatar by upload or attachment ID.
-    pub fn avatar(mut self, avatar: impl Into<String>) -> Self {
-        self.inner = self.inner.avatar(avatar);
-        self
-    }
-
-    /// Clears the avatar.
-    pub fn clear_avatar(mut self) -> Self {
-        self.inner = self.inner.clear_avatar();
         self
     }
 
@@ -1419,53 +1439,421 @@ impl<'a> BlockingListSavesBuilder<'a> {
     }
 }
 
-/// Synchronous uploads client.
-pub struct BlockingUploads {
+/// Synchronous communities client.
+pub struct BlockingCommunities {
     client: Actos,
 }
 
-impl BlockingUploads {
-    /// Starts building an upload request synchronously.
-    pub fn create<'a>(
-        &'a self,
-        source: impl Into<UploadSource>,
-    ) -> BlockingCreateUploadBuilder<'a> {
-        let inner = self.client.inner.uploads().create(source);
-        BlockingCreateUploadBuilder {
+impl BlockingCommunities {
+    /// Starts building a query for the community directory synchronously.
+    pub fn list<'a>(&'a self) -> BlockingListCommunitiesBuilder<'a> {
+        let inner = self.client.inner.communities().list();
+        BlockingListCommunitiesBuilder {
             client: &self.client,
             inner,
         }
     }
 
-    /// Deletes an upload record synchronously.
-    pub fn delete(&self, id: &str) -> Result<()> {
-        self.client.block_on(self.client.inner.uploads().delete(id))
+    /// Starts building a community creation request synchronously.
+    pub fn create<'a>(
+        &'a self,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> BlockingCreateCommunityBuilder<'a> {
+        let inner = self.client.inner.communities().create(name, description);
+        BlockingCreateCommunityBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Reads a community by name synchronously.
+    pub fn get(&self, name: &str) -> Result<CommunitySummary> {
+        self.client
+            .block_on(self.client.inner.communities().get(name))
+    }
+
+    /// Starts building a community edit request synchronously.
+    pub fn update<'a>(&'a self, name: impl Into<String>) -> BlockingUpdateCommunityBuilder<'a> {
+        let inner = self.client.inner.communities().update(name);
+        BlockingUpdateCommunityBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Joins a community synchronously.
+    pub fn join(&self, name: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().join(name))
+    }
+
+    /// Leaves a community synchronously.
+    pub fn leave(&self, name: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().leave(name))
+    }
+
+    /// Starts building a query for a community's members synchronously.
+    pub fn members<'a>(&'a self, name: impl Into<String>) -> BlockingCommunityMembersBuilder<'a> {
+        let inner = self.client.inner.communities().members(name);
+        BlockingCommunityMembersBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Kicks a member from a community synchronously.
+    pub fn kick(&self, name: &str, username: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().kick(name, username))
+    }
+
+    /// Starts building a query for a community's posts synchronously.
+    pub fn posts<'a>(&'a self, name: impl Into<String>) -> BlockingCommunityPostsBuilder<'a> {
+        let inner = self.client.inner.communities().posts(name);
+        BlockingCommunityPostsBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Closes a community synchronously.
+    pub fn close(&self, name: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().close(name))
+    }
+
+    /// Designates a community successor synchronously.
+    pub fn set_successor(&self, name: &str, username: &str) -> Result<()> {
+        self.client.block_on(
+            self.client
+                .inner
+                .communities()
+                .set_successor(name, username),
+        )
+    }
+
+    /// Invites an actor to a private community synchronously.
+    pub fn invite(&self, name: &str, username: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().invite(name, username))
+    }
+
+    /// Starts building a query for the caller's pending invitations synchronously.
+    pub fn invitations<'a>(&'a self) -> BlockingListInvitationsBuilder<'a> {
+        let inner = self.client.inner.communities().invitations();
+        BlockingListInvitationsBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Accepts an invitation synchronously.
+    pub fn accept_invitation(&self, id: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().accept_invitation(id))
+    }
+
+    /// Declines an invitation synchronously.
+    pub fn decline_invitation(&self, id: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().decline_invitation(id))
+    }
+
+    /// Applies to a private community synchronously.
+    pub fn apply(&self, name: &str, reason: impl Into<String>) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().apply(name, reason))
+    }
+
+    /// Starts building a query for a community's application queue synchronously.
+    pub fn applications<'a>(
+        &'a self,
+        name: impl Into<String>,
+    ) -> BlockingListApplicationsBuilder<'a> {
+        let inner = self.client.inner.communities().applications(name);
+        BlockingListApplicationsBuilder {
+            client: &self.client,
+            inner,
+        }
+    }
+
+    /// Accepts an application synchronously.
+    pub fn accept_application(&self, name: &str, id: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().accept_application(name, id))
+    }
+
+    /// Rejects an application synchronously.
+    pub fn reject_application(&self, name: &str, id: &str) -> Result<()> {
+        self.client
+            .block_on(self.client.inner.communities().reject_application(name, id))
     }
 }
 
-/// Builder for uploading a file synchronously.
-#[must_use = "builders do nothing until .send() is called"]
-pub struct BlockingCreateUploadBuilder<'a> {
+/// Builder for listing the community directory synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingListCommunitiesBuilder<'a> {
     client: &'a Actos,
-    inner: CreateUploadBuilder<'a>,
+    inner: ListCommunitiesBuilder<'a>,
 }
 
-impl<'a> BlockingCreateUploadBuilder<'a> {
-    /// Sets an explicit filename.
-    pub fn filename(mut self, filename: impl Into<String>) -> Self {
-        self.inner = self.inner.filename(filename);
+impl<'a> BlockingListCommunitiesBuilder<'a> {
+    /// Limits communities per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
         self
     }
 
-    /// Sets an explicit MIME type.
-    pub fn mime_type(mut self, mime_type: impl Into<String>) -> Self {
-        self.inner = self.inner.mime_type(mime_type);
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
         self
     }
 
-    /// Dispatches the multipart upload request synchronously.
-    pub fn send(self) -> Result<UploadResponse> {
+    /// Dispatches the request and returns a single page of communities.
+    pub fn send(self) -> Result<Page<CommunitySummary>> {
         self.client.block_on(self.inner.send())
+    }
+
+    /// Collects communities across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<CommunitySummary>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
+    }
+}
+
+/// Builder for creating a community synchronously.
+#[must_use = "builders do nothing until .send() is called"]
+pub struct BlockingCreateCommunityBuilder<'a> {
+    client: &'a Actos,
+    inner: CreateCommunityBuilder<'a>,
+}
+
+impl<'a> BlockingCreateCommunityBuilder<'a> {
+    /// Sets the visibility (`"public"` or `"private"`).
+    pub fn visibility(mut self, visibility: impl Into<String>) -> Self {
+        self.inner = self.inner.visibility(visibility);
+        self
+    }
+
+    /// Dispatches the creation request synchronously.
+    pub fn send(self) -> Result<CommunitySummary> {
+        self.client.block_on(self.inner.send())
+    }
+}
+
+/// Builder for editing a community synchronously.
+#[must_use = "builders do nothing until .send() is called"]
+pub struct BlockingUpdateCommunityBuilder<'a> {
+    client: &'a Actos,
+    inner: UpdateCommunityBuilder<'a>,
+}
+
+impl<'a> BlockingUpdateCommunityBuilder<'a> {
+    /// Replaces the community description.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.inner = self.inner.description(description);
+        self
+    }
+
+    /// Changes visibility (public to private only).
+    pub fn visibility(mut self, visibility: impl Into<String>) -> Self {
+        self.inner = self.inner.visibility(visibility);
+        self
+    }
+
+    /// Dispatches the update request synchronously.
+    pub fn send(self) -> Result<CommunitySummary> {
+        self.client.block_on(self.inner.send())
+    }
+}
+
+/// Builder for listing a community's members synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingCommunityMembersBuilder<'a> {
+    client: &'a Actos,
+    inner: CommunityMembersBuilder<'a>,
+}
+
+impl<'a> BlockingCommunityMembersBuilder<'a> {
+    /// Limits members per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
+        self
+    }
+
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
+        self
+    }
+
+    /// Dispatches the request and returns a single page of members.
+    pub fn send(self) -> Result<Page<CommunityMemberSummary>> {
+        self.client.block_on(self.inner.send())
+    }
+
+    /// Collects members across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<CommunityMemberSummary>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
+    }
+}
+
+/// Builder for listing a community's posts synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingCommunityPostsBuilder<'a> {
+    client: &'a Actos,
+    inner: CommunityPostsBuilder<'a>,
+}
+
+impl<'a> BlockingCommunityPostsBuilder<'a> {
+    /// Sets the sort ordering.
+    pub fn sort(mut self, sort: Sort) -> Self {
+        self.inner = self.inner.sort(sort);
+        self
+    }
+
+    /// Selects fields to project on returned posts.
+    pub fn fields(mut self, fields: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.inner = self.inner.fields(fields);
+        self
+    }
+
+    /// Adds a single field to the projection.
+    pub fn field(mut self, field: impl Into<String>) -> Self {
+        self.inner = self.inner.field(field);
+        self
+    }
+
+    /// Limits posts per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
+        self
+    }
+
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
+        self
+    }
+
+    /// Dispatches the request and returns a single page of posts.
+    pub fn send(self) -> Result<Page<Post>> {
+        self.client.block_on(self.inner.send())
+    }
+
+    /// Collects posts across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<Post>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
+    }
+}
+
+/// Builder for listing the caller's pending invitations synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingListInvitationsBuilder<'a> {
+    client: &'a Actos,
+    inner: ListInvitationsBuilder<'a>,
+}
+
+impl<'a> BlockingListInvitationsBuilder<'a> {
+    /// Limits invitations per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
+        self
+    }
+
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
+        self
+    }
+
+    /// Dispatches the request and returns a single page of invitations.
+    pub fn send(self) -> Result<Page<InvitationSummary>> {
+        self.client.block_on(self.inner.send())
+    }
+
+    /// Collects invitations across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<InvitationSummary>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
+    }
+}
+
+/// Builder for listing a community's application queue synchronously.
+#[must_use = "builders do nothing until .send() or .collect() is called"]
+pub struct BlockingListApplicationsBuilder<'a> {
+    client: &'a Actos,
+    inner: ListApplicationsBuilder<'a>,
+}
+
+impl<'a> BlockingListApplicationsBuilder<'a> {
+    /// Filters applications by status.
+    pub fn status(mut self, status: impl Into<String>) -> Self {
+        self.inner = self.inner.status(status);
+        self
+    }
+
+    /// Limits applications per page.
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.inner = self.inner.limit(limit);
+        self
+    }
+
+    /// Sets the pagination cursor.
+    pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
+        self.inner = self.inner.cursor(cursor);
+        self
+    }
+
+    /// Dispatches the request and returns a single page of applications.
+    pub fn send(self) -> Result<Page<ApplicationSummary>> {
+        self.client.block_on(self.inner.send())
+    }
+
+    /// Collects applications across all pages synchronously.
+    pub fn collect(self) -> Result<Vec<ApplicationSummary>> {
+        let stream = self.inner.stream();
+        self.client.block_on(async move {
+            let mut results = Vec::new();
+            let mut pinned = std::pin::pin!(stream);
+            while let Some(item) = pinned.next().await {
+                results.push(item?);
+            }
+            Ok(results)
+        })
     }
 }
 
@@ -1518,9 +1906,9 @@ impl BlockingAdmin {
         }
     }
 
-    /// Accesses role management endpoints synchronously.
-    pub fn roles(&self) -> BlockingAdminRoles {
-        BlockingAdminRoles {
+    /// Accesses scoped permission management endpoints synchronously.
+    pub fn permissions(&self) -> BlockingAdminPermissions {
+        BlockingAdminPermissions {
             client: self.client.clone(),
         }
     }
@@ -1660,9 +2048,12 @@ impl BlockingAdminBans {
     }
 
     /// Removes an account ban synchronously.
-    pub fn remove(&self, username: &str) -> Result<()> {
+    ///
+    /// Pass `Some(community)` to remove a community-scoped ban, or `None` for
+    /// the platform-wide ban.
+    pub fn remove(&self, username: &str, community: Option<&str>) -> Result<()> {
         self.client
-            .block_on(self.client.inner.admin().bans().remove(username))
+            .block_on(self.client.inner.admin().bans().remove(username, community))
     }
 }
 
@@ -1680,22 +2071,60 @@ impl<'a> BlockingCreateBanBuilder<'a> {
         self
     }
 
+    /// Scopes the ban to a community by name.
+    pub fn community(mut self, community: impl Into<String>) -> Self {
+        self.inner = self.inner.community(community);
+        self
+    }
+
+    /// Also queues deletion of the actor's posts in the community.
+    pub fn delete_posts(mut self, delete_posts: bool) -> Self {
+        self.inner = self.inner.delete_posts(delete_posts);
+        self
+    }
+
     /// Dispatches the ban creation request synchronously.
     pub fn send(self) -> Result<BanSummary> {
         self.client.block_on(self.inner.send())
     }
 }
 
-/// Synchronous role management sub-client.
-pub struct BlockingAdminRoles {
+/// Synchronous scoped permission management sub-client.
+pub struct BlockingAdminPermissions {
     client: Actos,
 }
 
-impl BlockingAdminRoles {
-    /// Assigns or revokes administrative roles synchronously.
-    pub fn set(&self, username: impl Into<String>, role: Option<&str>) -> Result<()> {
-        self.client
-            .block_on(self.client.inner.admin().roles().set(username, role))
+impl BlockingAdminPermissions {
+    /// Grants a scoped permission synchronously.
+    pub fn grant(
+        &self,
+        username: impl Into<String>,
+        permission: impl Into<String>,
+        community: Option<&str>,
+    ) -> Result<()> {
+        self.client.block_on(
+            self.client
+                .inner
+                .admin()
+                .permissions()
+                .grant(username, permission, community),
+        )
+    }
+
+    /// Revokes a scoped permission synchronously.
+    pub fn revoke(
+        &self,
+        username: impl Into<String>,
+        permission: impl Into<String>,
+        community: Option<&str>,
+    ) -> Result<()> {
+        self.client.block_on(
+            self.client
+                .inner
+                .admin()
+                .permissions()
+                .revoke(username, permission, community),
+        )
     }
 }
 

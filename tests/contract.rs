@@ -29,7 +29,7 @@ async fn test_contract_16_points() {
     let _ = client.feed();
     let _ = client.votes();
     let _ = client.saves();
-    let _ = client.uploads();
+    let _ = client.communities();
     let _ = client.reports();
     let _ = client.admin();
     let _ = client.meta();
@@ -48,7 +48,6 @@ async fn test_contract_16_points() {
         display_name: None,
         bio: None,
         created_at: "2026-09-03T12:00:00Z".to_string(),
-        trust_level: 0,
         avatar_url: None,
     };
     let dummy_content = actos_types::content::ContentSummary {
@@ -56,11 +55,11 @@ async fn test_contract_16_points() {
         content_type: "post".to_string(),
         author: dummy_actor.clone(),
         author_deleted: false,
+        community: None,
         title: Some("Title".to_string()),
         body: "Body".to_string(),
         body_format: "plain".to_string(),
         body_html: None,
-        metadata: serde_json::json!({}),
         tags: vec![],
         score: 0,
         upvotes: 0,
@@ -70,6 +69,8 @@ async fn test_contract_16_points() {
         edited_at: None,
         attachments: None,
         deleted: false,
+        is_cross_post: false,
+        cross_post: None,
     };
     assert_types_from_actos_types(
         &dummy_actor,
@@ -176,11 +177,11 @@ async fn test_contract_16_points() {
         "content_type": "post",
         "author": dummy_actor,
         "author_deleted": false,
+        "community": null,
         "title": "Title",
         "body": "Body",
         "body_format": "plain",
         "body_html": null,
-        "metadata": {},
         "tags": [],
         "score": 0,
         "upvotes": 0,
@@ -190,6 +191,8 @@ async fn test_contract_16_points() {
         "edited_at": null,
         "attachments": null,
         "deleted": false,
+        "is_cross_post": false,
+        "cross_post": null,
         "unknown_future_field_999": "future_value",
         "experimental_metrics": { "foo": 42 }
     });

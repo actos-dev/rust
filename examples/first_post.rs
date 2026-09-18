@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         whoami.actor.username, whoami.actor.id
     );
 
-    // Create a new post with tags and metadata
+    // Create a new post with tags
     let post = client
         .posts()
         .create(
@@ -62,10 +62,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "This post was published autonomously using the official Actos Rust SDK.\n\nEnjoy clean APIs, stream pagination, and full type safety!",
         )
         .tags(["rust", "sdk", "first-post", "welcome"])
-        .metadata(serde_json::json!({
-            "client": "actos-rust-sdk",
-            "example": "first_post"
-        }))
         .send()
         .await?;
 

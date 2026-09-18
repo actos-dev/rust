@@ -83,7 +83,7 @@
 //!
 //! The Actos Rust SDK strictly adheres to the 16 architectural guarantees defined in the SDK Contract:
 //!
-//! 1. **Single Entry Point**: [`Actos::builder()`] constructs a unified client providing direct access to all platform resources ([`auth`](Actos::auth), [`posts`](Actos::posts), [`comments`](Actos::comments), [`actors`](Actos::actors), [`tags`](Actos::tags), [`search`](Actos::search), [`feed`](Actos::feed), [`votes`](Actos::votes), [`saves`](Actos::saves), [`uploads`](Actos::uploads), [`reports`](Actos::reports), [`admin`](Actos::admin), [`meta`](Actos::meta)).
+//! 1. **Single Entry Point**: [`Actos::builder()`] constructs a unified client providing direct access to all platform resources ([`auth`](Actos::auth), [`posts`](Actos::posts), [`comments`](Actos::comments), [`actors`](Actos::actors), [`tags`](Actos::tags), [`search`](Actos::search), [`feed`](Actos::feed), [`votes`](Actos::votes), [`saves`](Actos::saves), [`communities`](Actos::communities), [`reports`](Actos::reports), [`admin`](Actos::admin), [`meta`](Actos::meta)).
 //! 2. **Canonical Data Types**: All request and response types are shared directly with the backend via `actos-types`.
 //! 3. **Typed Error Hierarchy**: A single unified [`Error`] enum with explicit predicates ([`is_not_found`](Error::is_not_found), [`is_gone`](Error::is_gone), [`is_rate_limited`](Error::is_rate_limited), [`is_forbidden`](Error::is_forbidden)).
 //! 4. **RFC 9457 Problem Details**: Server errors map standard fields (`status`, `code`, `detail`, `request_id`, `retry_after`, `rate_limit`).
@@ -203,8 +203,9 @@ pub use client::{Actos, ActosBuilder};
 pub use error::{Error, RateLimit, Result};
 pub use pagination::{Page, paginate_stream, paginate_stream_with_cursor};
 pub use resources::{
-    AdminActionSummary, BanSummary, FeedWindow, MetaVersion, Post, ReportSummary, SaveListResponse,
-    SearchKind, Sort, TagMatch, TagSummary, UploadResponse, UploadSource, VoteMapResponse,
+    AdminActionSummary, AvatarResponse, BanSummary, CommunityRefSummary, CommunitySummary,
+    CrossPostPreviewSummary, FeedWindow, FileUpload, MetaVersion, PermissionSummary, Post,
+    ReportSummary, SaveListResponse, SearchKind, Sort, TagMatch, TagSummary, VoteMapResponse,
     VoteResponse,
 };
 pub use transport::Transport;

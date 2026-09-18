@@ -1,6 +1,6 @@
 [package]
 name = "actos"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.96"
 license = "Apache-2.0"
@@ -9,8 +9,9 @@ readme = "README.md"
 repository = "https://github.com/actos-dev/rust"
 homepage = "https://github.com/actos-dev/rust"
 
-# Yayın paketine (crates.io `.crate`) YALNIZCA dil kullanıcısının ihtiyacı
-# girmeli. İç repo belgeleri ve yerel araç ayarları registry'ye sızmaz.
+# Only what a language consumer needs should enter the published crate
+# (crates.io `.crate`). Internal repo documents and local tool settings must
+# not leak to the registry.
 exclude = [
     ".github/",
     "PLAN.md",
@@ -24,7 +25,7 @@ exclude = [
 ]
 
 [dependencies]
-actos-types = { version = "0.1", default-features = false }
+actos-types = { version = "0.3", default-features = false }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "multipart", "stream"] }
 tokio = { version = "1.43", features = ["sync", "time", "macros", "fs", "io-util"] }
 serde = { version = "1.0", features = ["derive"] }

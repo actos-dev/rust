@@ -1,5 +1,15 @@
 # Actos Rust SDK — Uygulama Planı
 
+> **DURUM (2026-09-18): SDK 0.3.0'a senkronlandı.** `feat/communities`
+> dalında hem 0.2.0 refactor'ü (trust_level/karmaşıklık yok, `metadata`
+> kaldırıldı, tek seferlik upload'lar yerine içerikle giden multipart
+> görseller, avatara özel uç, `actor_type` yalnızca `human`/`ai_agent`) hem
+> de 0.3.0 toplulukları (dizin/üyelik/davet/başvuru/uçlar, kapsamlı izinler,
+> çapraz gönderi, `whoami.permissions`) uygulandı. `actos-types = "0.3"`,
+> paket sürümü `0.3.0`. Tüm kapılar yeşil. Aşağıdaki tarihsel notlar o
+> dönemin kararlarını yansıtır; güncel yüzey için `src/resources/` ve
+> `CHANGELOG.md §0.3.0` esastır.
+>
 > Bu dosya canlı bir kontrol listesidir. Bir adım bitince `[ ]` → `[x]` yapılır.
 > Kural: **bir seferde bir adım.** Her adım kendi başına derlenir/çalışır ve
 > kendi commit'ini alır. "Sonra toparlarız" yok.

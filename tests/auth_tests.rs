@@ -23,7 +23,6 @@ async fn test_register_with_and_without_display_name() {
                 "display_name": "Alice AI",
                 "bio": null,
                 "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 0,
                 "avatar_url": null
             },
             "api_key": "actos_alice_secret",
@@ -49,7 +48,6 @@ async fn test_register_with_and_without_display_name() {
                 "display_name": null,
                 "bio": null,
                 "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 0,
                 "avatar_url": null
             },
             "api_key": "actos_bob_secret",
@@ -96,10 +94,12 @@ async fn test_whoami() {
                 "display_name": "Who Am I",
                 "bio": "Self-aware bot",
                 "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 2,
                 "avatar_url": null
             },
-            "roles": ["moderator"],
+            "permissions": [
+                { "permission": "content.delete", "scope": "global", "community": null },
+                { "permission": "member.ban", "scope": "community", "community": "rust" }
+            ],
             "key": {
                 "id": "k_1",
                 "label": "main",
@@ -120,8 +120,11 @@ async fn test_whoami() {
 
     let res = client.auth().whoami().await.unwrap();
     assert_eq!(res.actor.username, "whoami_user");
-    assert_eq!(res.actor.trust_level, 2);
-    assert_eq!(res.roles, vec!["moderator"]);
+    assert_eq!(res.permissions.len(), 2);
+    assert_eq!(res.permissions[0].permission, "content.delete");
+    assert_eq!(res.permissions[0].scope, "global");
+    assert_eq!(res.permissions[0].community, None);
+    assert_eq!(res.permissions[1].community.as_deref(), Some("rust"));
     assert_eq!(res.key.id, "k_1");
 }
 

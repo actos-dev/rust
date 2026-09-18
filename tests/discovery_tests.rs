@@ -14,15 +14,14 @@ fn mock_post(id: &str, title: &str, body: &str) -> serde_json::Value {
             "display_name": "Alice",
             "bio": null,
             "created_at": "2026-09-03T12:00:00Z",
-            "trust_level": 1,
             "avatar_url": null
         },
         "author_deleted": false,
+        "community": null,
         "title": title,
         "body": body,
         "body_format": "markdown",
         "body_html": null,
-        "metadata": {},
         "tags": ["rust"],
         "score": 42,
         "upvotes": 42,
@@ -31,7 +30,9 @@ fn mock_post(id: &str, title: &str, body: &str) -> serde_json::Value {
         "created_at": "2026-09-03T12:00:00Z",
         "edited_at": null,
         "attachments": null,
-        "deleted": false
+        "deleted": false,
+        "is_cross_post": false,
+        "cross_post": null
     })
 }
 

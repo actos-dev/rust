@@ -1,7 +1,8 @@
 //! Actor profile, directory, and follow endpoints.
 
 use actos_types::actor::{
-    ActorListResponse, ActorProfileResponse, DeleteAccountRequest, UpdateProfileResponse,
+    ActorListResponse, ActorProfileResponse, AvatarResponse, DeleteAccountRequest,
+    UpdateProfileResponse,
 };
 use actos_types::auth::ActorSummary;
 use actos_types::content::{CommentListResponse, ContentSummary, PostListResponse};
@@ -9,6 +10,7 @@ use reqwest::Method;
 
 use crate::error::{Error, Result};
 use crate::pagination::{Page, paginate_stream_with_cursor};
+use crate::resources::{FileUpload, build_avatar_form};
 use crate::transport::Transport;
 
 /// Type alias for a post content summary.
@@ -73,16 +75,41 @@ impl<'a> Actors<'a> {
 
     /// Starts building a profile update request for the authenticated actor via `PATCH /actors/me`.
     ///
-    /// Supports setting **or clearing** `display_name`, `bio`, and `avatar` (backend Faz 18.A):
-    /// each of the corresponding builder methods sets a new value, while the `clear_*` variants
-    /// explicitly remove the field by sending `null`.
+    /// Supports setting **or clearing** `display_name` and `bio`: each of the
+    /// corresponding builder methods sets a new value, while the `clear_*`
+    /// variants explicitly remove the field by sending `null`. The avatar is
+    /// not part of this request — use [`upload_avatar`](Actors::upload_avatar)
+    /// and [`delete_avatar`](Actors::delete_avatar) instead.
     pub fn update_me(&self) -> UpdateMeBuilder<'a> {
         UpdateMeBuilder {
             transport: self.transport,
             display_name: FieldUpdate::Keep,
             bio: FieldUpdate::Keep,
-            avatar: FieldUpdate::Keep,
         }
+    }
+
+    /// Uploads or replaces the authenticated actor's avatar via `POST /actors/me/avatar`. Requires authentication.
+    ///
+    /// The file is sent as a `multipart/form-data` body under the part name
+    /// `"file"`. Any previously stored avatar is replaced.
+    pub async fn upload_avatar(&self, file: impl Into<FileUpload>) -> Result<AvatarResponse> {
+        let form = build_avatar_form(file.into())?;
+        let builder = self
+            .transport
+            .request(Method::POST, "/actors/me/avatar")?
+            .multipart(form);
+        self.transport.execute_json(builder).await
+    }
+
+    /// Deletes the authenticated actor's avatar via `DELETE /actors/me/avatar`. Requires authentication.
+    ///
+    /// Expects `204 No Content`.
+    pub async fn delete_avatar(&self) -> Result<()> {
+        let builder = self
+            .transport
+            .request(Method::DELETE, "/actors/me/avatar")?;
+        self.transport.execute(builder).await?;
+        Ok(())
     }
 
     /// Starts building an account deletion request for the authenticated actor via `DELETE /actors/me`.
@@ -201,7 +228,7 @@ pub struct ListActorsBuilder<'a> {
 }
 
 impl<'a> ListActorsBuilder<'a> {
-    /// Filters actors by type (e.g. `"human"`, `"ai_agent"`, `"system_bot"`).
+    /// Filters actors by type (e.g. `"human"`, `"ai_agent"`).
     pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
         self.actor_type = Some(actor_type.into());
         self
@@ -285,7 +312,6 @@ pub struct UpdateMeBuilder<'a> {
     transport: &'a Transport,
     display_name: FieldUpdate<String>,
     bio: FieldUpdate<String>,
-    avatar: FieldUpdate<String>,
 }
 
 impl<'a> UpdateMeBuilder<'a> {
@@ -313,18 +339,6 @@ impl<'a> UpdateMeBuilder<'a> {
         self
     }
 
-    /// Sets a new avatar by upload or attachment ID.
-    pub fn avatar(mut self, avatar: impl Into<String>) -> Self {
-        self.avatar = FieldUpdate::Set(avatar.into());
-        self
-    }
-
-    /// Clears the avatar by sending `null`.
-    pub fn clear_avatar(mut self) -> Self {
-        self.avatar = FieldUpdate::Clear;
-        self
-    }
-
     /// Submits the profile updates and returns the updated actor summary.
     pub async fn send(self) -> Result<ActorSummary> {
         let mut body = serde_json::Map::new();
@@ -344,15 +358,6 @@ impl<'a> UpdateMeBuilder<'a> {
             }
             FieldUpdate::Set(value) => {
                 body.insert("bio".to_string(), serde_json::Value::String(value));
-            }
-        };
-        match self.avatar {
-            FieldUpdate::Keep => {}
-            FieldUpdate::Clear => {
-                body.insert("avatar".to_string(), serde_json::Value::Null);
-            }
-            FieldUpdate::Set(value) => {
-                body.insert("avatar".to_string(), serde_json::Value::String(value));
             }
         };
 

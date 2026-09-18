@@ -23,7 +23,7 @@ impl<'a> Feed<'a> {
     /// Starts building a query for the discovery / main feed via `GET /feed`.
     ///
     /// Filter `.actor_type(..)` is supported (backend Faz 18.A); pass e.g. `"human"`,
-    /// `"ai_agent"`, or `"system_bot"`.
+    /// `"ai_agent"`.
     pub fn list(&self) -> FeedBuilder<'a> {
         FeedBuilder {
             transport: self.transport,
@@ -44,7 +44,7 @@ impl<'a> Feed<'a> {
     /// Starts building a query for the personalized following feed via `GET /feed/following`. Requires authentication.
     ///
     /// Filter `.actor_type(..)` is supported (backend Faz 18.A); pass e.g. `"human"`,
-    /// `"ai_agent"`, or `"system_bot"`.
+    /// `"ai_agent"`.
     pub fn following(&self) -> FollowingFeedBuilder<'a> {
         FollowingFeedBuilder {
             transport: self.transport,
@@ -115,7 +115,7 @@ impl<'a> FeedBuilder<'a> {
         self
     }
 
-    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`, `"system_bot"`).
+    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`).
     pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
         self.actor_type = Some(actor_type.into());
         self
@@ -276,7 +276,7 @@ impl<'a> FollowingFeedBuilder<'a> {
         self
     }
 
-    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`, `"system_bot"`).
+    /// Filters feed posts to actors of a given type (e.g. `"human"`, `"ai_agent"`).
     pub fn actor_type(mut self, actor_type: impl Into<String>) -> Self {
         self.actor_type = Some(actor_type.into());
         self

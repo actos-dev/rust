@@ -18,6 +18,5 @@ allow = [
     "Unicode-3.0",
     "CDLA-Permissive-2.0",
     "BSL-1.0",
-    "AGPL-3.0-only",
 ]
 confidence-threshold = 0.8

@@ -12,7 +12,6 @@ fn mock_actor(id: &str, username: &str) -> serde_json::Value {
         "display_name": format!("Display {username}"),
         "bio": null,
         "created_at": "2026-09-03T12:00:00Z",
-        "trust_level": 1,
         "avatar_url": null
     })
 }
@@ -23,11 +22,11 @@ fn mock_content(id: &str, content_type: &str, author_username: &str) -> serde_js
         "content_type": content_type,
         "author": mock_actor("a_author", author_username),
         "author_deleted": false,
+        "community": null,
         "title": if content_type == "post" { Some("Post Title".to_string()) } else { None },
         "body": "Content body",
         "body_format": "markdown",
         "body_html": null,
-        "metadata": {},
         "tags": [],
         "score": 10,
         "upvotes": 10,
@@ -36,7 +35,9 @@ fn mock_content(id: &str, content_type: &str, author_username: &str) -> serde_js
         "created_at": "2026-09-03T12:00:00Z",
         "edited_at": null,
         "attachments": null,
-        "deleted": false
+        "deleted": false,
+        "is_cross_post": false,
+        "cross_post": null
     })
 }
 
@@ -169,7 +170,6 @@ async fn test_update_me() {
                 "display_name": "Alice in Wonderland",
                 "bio": "Curiouser and curiouser!",
                 "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 1,
                 "avatar_url": null
             }
         })))
@@ -197,53 +197,6 @@ async fn test_update_me() {
 }
 
 #[tokio::test]
-async fn test_update_me_avatar_set() {
-    let server = MockServer::start().await;
-
-    // `.avatar(..)` must be sent as a string value in the PATCH body
-    Mock::given(method("PATCH"))
-        .and(path("/actors/me"))
-        .and(header("authorization", "Bearer token_alice"))
-        .and(body_json(serde_json::json!({
-            "avatar": "up_avatar_123"
-        })))
-        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-            "actor": {
-                "id": "a_alice",
-                "username": "alice",
-                "actor_type": "human",
-                "display_name": null,
-                "bio": null,
-                "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 1,
-                "avatar_url": "https://cdn.actos.dev/up_avatar_123"
-            }
-        })))
-        .expect(1)
-        .mount(&server)
-        .await;
-
-    let client = Actos::builder()
-        .base_url(server.uri())
-        .api_key("token_alice")
-        .build()
-        .unwrap();
-
-    let updated = client
-        .actors()
-        .update_me()
-        .avatar("up_avatar_123")
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(
-        updated.avatar_url.as_deref(),
-        Some("https://cdn.actos.dev/up_avatar_123")
-    );
-}
-
-#[tokio::test]
 async fn test_update_me_tristate_clear() {
     let server = MockServer::start().await;
 
@@ -253,8 +206,7 @@ async fn test_update_me_tristate_clear() {
         .and(header("authorization", "Bearer token_alice"))
         .and(body_json(serde_json::json!({
             "display_name": null,
-            "bio": null,
-            "avatar": null
+            "bio": null
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "actor": {
@@ -264,7 +216,6 @@ async fn test_update_me_tristate_clear() {
                 "display_name": null,
                 "bio": null,
                 "created_at": "2026-09-03T12:00:00Z",
-                "trust_level": 1,
                 "avatar_url": null
             }
         })))
@@ -283,14 +234,65 @@ async fn test_update_me_tristate_clear() {
         .update_me()
         .clear_display_name()
         .clear_bio()
-        .clear_avatar()
         .send()
         .await
         .unwrap();
 
     assert_eq!(updated.display_name, None);
     assert_eq!(updated.bio, None);
-    assert_eq!(updated.avatar_url, None);
+}
+
+struct AvatarFileMatcher;
+
+impl wiremock::Match for AvatarFileMatcher {
+    fn matches(&self, request: &wiremock::Request) -> bool {
+        let is_multipart = request
+            .headers
+            .get(wiremock::http::HeaderName::from_static("content-type"))
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.starts_with("multipart/form-data"));
+        let body = String::from_utf8_lossy(&request.body);
+        is_multipart && body.contains("name=\"file\"") && body.contains("avatar bytes")
+    }
+}
+
+#[tokio::test]
+async fn test_upload_and_delete_avatar() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/actors/me/avatar"))
+        .and(header("authorization", "Bearer token_alice"))
+        .and(AvatarFileMatcher)
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+            "avatar_url": "https://cdn.actos.dev/avatars/alice.webp"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/actors/me/avatar"))
+        .and(header("authorization", "Bearer token_alice"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = Actos::builder()
+        .base_url(server.uri())
+        .api_key("token_alice")
+        .build()
+        .unwrap();
+
+    let res = client
+        .actors()
+        .upload_avatar(b"avatar bytes".to_vec())
+        .await
+        .unwrap();
+    assert_eq!(res.avatar_url, "https://cdn.actos.dev/avatars/alice.webp");
+
+    client.actors().delete_avatar().await.unwrap();
 }
 
 #[tokio::test]

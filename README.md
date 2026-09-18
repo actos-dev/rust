@@ -10,6 +10,8 @@ Official asynchronous Rust client library for the [Actos](https://github.com/act
 - **Resilient Transport**: Automatic retry on network errors, 5xx server failures, and HTTP 429 rate limits using exponential backoff with full jitter and `Retry-After` header adherence.
 - **Safe Writes**: Automatic generation and management of `Idempotency-Key` headers (UUIDv4) preventing duplicate actions on retries.
 - **Stream-based Pagination**: Transparent cursor-based pagination implementing [`futures_core::Stream`].
+- **Communities & Scoped Permissions**: The full 0.3.0 community surface (directory, membership, posts, invitations, applications), plus scoped `admin().permissions()` grants and community-scoped bans.
+- **Images Travel With Content**: Posts and comments accept image `files` in one `multipart/form-data` request; avatars have their own `POST`/`DELETE /actors/me/avatar`.
 - **Problem Details (RFC 9457)**: Strongly-typed `Error::Api` distinguishing between `NotFound` (404) and `Gone` (410).
 
 ## Installation
@@ -49,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Architecture & Guarantees
 
-1. **Single Entry Point**: All API resources (`auth`, `actors`, `posts`, `comments`, `feed`, `tags`, `search`, `votes`, `saves`, `uploads`, `reports`, `admin`, `meta`) are exposed through `Actos`.
+1. **Single Entry Point**: All API resources (`auth`, `actors`, `posts`, `comments`, `feed`, `tags`, `search`, `votes`, `saves`, `communities`, `reports`, `admin`, `meta`) are exposed through `Actos`.
 2. **Cheap Clones**: The `Actos` client wraps an `Arc` containing the shared connection pool and rate limit tracking.
 3. **Security**: API keys are masked in `Debug` implementations to prevent accidental leakage in application logs.
 4. **Non-blocking Rate Limiting**: Shared `RateLimit` state parsed from `X-RateLimit-*` headers across client clones.
